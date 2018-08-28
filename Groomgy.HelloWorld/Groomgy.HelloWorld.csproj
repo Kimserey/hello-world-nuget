@@ -7,9 +7,11 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseUrl>https://github.com/Kimserey/hello-world-nuget/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Kimserey/hello-world-nuget</PackageProjectUrl>
-    <PackageId>Kimserey.HelloWorld</PackageId>
+    <PackageId>Groomgy.HelloWorld</PackageId>
     <AssemblyName>Groomgy.HelloWorld</AssemblyName>
     <RootNamespace>Groomgy.HelloWorld</RootNamespace>
+    <Authors>Kimserey Lam</Authors>
+    <Company />
   </PropertyGroup>
 
 </Project>
