@@ -1,7 +1,18 @@
 #---------------------------------#
 #      general configuration      #
 #---------------------------------#
-version: '{build}'
+
+# Reset the build number at each minor releases.
+version: '1.0.{build}'
+
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
+  assembly_version: '{version}'
+  file_version: '{version}'
+  informational_version: '{version}'
 
 branches:
   only:
@@ -18,7 +29,9 @@ image: Visual Studio 2017
 
 environment:
   VisualStudioVersion: 15.0
-  BUILD_CONFIGURATION: release
+  BuildConfiguration: release
+  Nuget:
+    
 
 nuget:
   disable_publish_on_pr: true
@@ -37,6 +50,14 @@ test: off
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
-artifacts:
-- path: .\artifacts\**\*.nupkg
-  name: NuGet
+# artifacts:
+# - path: .\artifacts\**\*.nupkg
+
+#---------------------------------#
+#     deployment configuration    #
+#---------------------------------#
+deploy:
+  - provider: NuGet
+    api_key:
+      secure: m49OJ7+Jdt9an3jPcTukHA==
+    artifact: .\artifacts\**\*.nupkg

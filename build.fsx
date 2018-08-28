@@ -6,7 +6,7 @@ open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
 let configuration =
-    DotNet.BuildConfiguration.fromEnvironVarOrDefault "BUILD_CONFIGURATION" DotNet.BuildConfiguration.Debug
+    DotNet.BuildConfiguration.fromEnvironVarOrDefault "BuildConfiguration" DotNet.BuildConfiguration.Debug
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
