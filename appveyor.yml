@@ -30,8 +30,6 @@ image: Visual Studio 2017
 environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
-  Nuget:
-    
 
 nuget:
   disable_publish_on_pr: true
@@ -61,14 +59,11 @@ deploy:
     api_key:
       secure: w9QUr4WEITnD4d+d/btMV7BbTpz6ZQmHfWOQ6jazhF72gGgXfPSaTp3KgO34YQ6A
 
-#  - provider: GitHub
-#    release: myproduct-v$(appveyor_build_version)
-#    description: 'Release description'
-#    auth_token:
-#      secure: <your encrypted token> # your encrypted token from GitHub
-#    artifact: /.*\.nupkg/            # upload all NuGet packages to release assets
-#    draft: false
-#    prerelease: false
-#    on:
-#      branch: master                 # release from master branch only
-#      appveyor_repo_tag: true 
+  - provider: GitHub
+    description: ''
+    auth_token:
+      secure: XUe++IN5fwLVTJC5RIWWMswUwAGMlmYBdNevE0rXCUYl8Qv3xGIjwQo3y5+Pn4rF
+    artifact: /.*\.nupkg/
+    on:
+      branch: master 
+      appveyor_repo_tag: true 
