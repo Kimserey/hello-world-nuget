@@ -18,6 +18,7 @@ image: Visual Studio 2017
 
 environment:
   VisualStudioVersion: 15.0
+  BUILD_CONFIGURATION: release
 
 nuget:
   disable_publish_on_pr: true
