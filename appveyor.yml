@@ -50,8 +50,8 @@ test: off
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
-# artifacts:
-# - path: .\artifacts\**\*.nupkg
+artifacts:
+  - path: .\artifacts\**\*.nupkg
 
 #---------------------------------#
 #     deployment configuration    #
