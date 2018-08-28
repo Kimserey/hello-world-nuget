@@ -1,4 +1,4 @@
-﻿namespace HelloWorld
+﻿namespace Groomgy.HelloWorld
 {
     public class HelloWorldService
     {
