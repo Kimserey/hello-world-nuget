@@ -12,7 +12,7 @@
     <RootNamespace>Groomgy.HelloWorld</RootNamespace>
     <Authors>Kimserey Lam</Authors>
     <Company />
-    <Version>1.1.0</Version>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
 </Project>
