@@ -27,7 +27,7 @@ nuget:
 #       build configuration       #
 #---------------------------------#
 build_script:
-- .\fake run build.fsx
+- .\fake run build.fsx -t All
 
 #---------------------------------#
 #       tests configuration       #
