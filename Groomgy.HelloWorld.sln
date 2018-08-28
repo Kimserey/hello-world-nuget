@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Groomgy.HelloWorld", "Groomgy.HelloWorld\Groomgy.HelloWorld.csproj", "{64ED5769-7F85-4F05-AA9E-42D32A1E8FA0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Groomgy.TestConsoleApp", "Groomgy.TestConsoleApp\Groomgy.TestConsoleApp.csproj", "{B55A0D55-21CF-421A-9F1B-C2E22FB8AF8B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{64ED5769-7F85-4F05-AA9E-42D32A1E8FA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64ED5769-7F85-4F05-AA9E-42D32A1E8FA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{64ED5769-7F85-4F05-AA9E-42D32A1E8FA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B55A0D55-21CF-421A-9F1B-C2E22FB8AF8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B55A0D55-21CF-421A-9F1B-C2E22FB8AF8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B55A0D55-21CF-421A-9F1B-C2E22FB8AF8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B55A0D55-21CF-421A-9F1B-C2E22FB8AF8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
