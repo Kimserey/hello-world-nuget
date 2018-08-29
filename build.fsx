@@ -15,6 +15,10 @@ Target.create "Clean" (fun _ ->
     |> Shell.cleanDirs 
 )
 
+Target.create "Version" (fun _ -> 
+    Shell.Exec("gitversion", "/l console /output buildserver /updateAssemblyInfo")
+    |> ignore)
+
 Target.create "Build" (fun _ ->
     !! "**/*.*proj"
     |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = configuration }))
@@ -35,8 +39,12 @@ Target.create "Pack" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
+  ==> "Version"
   ==> "Build"
   ==> "Pack"
   ==> "All"
+
+"Clean"
+ ==> "Build"
 
 Target.runOrDefault "Build"

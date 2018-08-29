@@ -2,17 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Description>This is a test package returning Hello World</Description>
     <RepositoryUrl>https://github.com/Kimserey/hello-world-nuget</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseUrl>https://github.com/Kimserey/hello-world-nuget/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Kimserey/hello-world-nuget</PackageProjectUrl>
-    <PackageId>Groomgy.HelloWorld</PackageId>
-    <AssemblyName>Groomgy.HelloWorld</AssemblyName>
-    <RootNamespace>Groomgy.HelloWorld</RootNamespace>
-    <Authors>Kimserey Lam</Authors>
-    <Company />
-    <Version>1.0.0</Version>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
 </Project>

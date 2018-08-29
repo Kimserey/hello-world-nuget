@@ -3,7 +3,7 @@
 #---------------------------------#
 
 # Reset the build number at each minor releases.
-version: '1.2.{build}'
+version: '{build}'
 
 dotnet_csproj:
   patch: true
@@ -44,6 +44,12 @@ nuget:
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
+install:
+  - choco install gitversion.portable -pre -y
+
+before_build:
+  - ps: gitversion /l console /output buildserver /updateAssemblyInfo
+
 build_script:
 - .\fake run build.fsx -t All
 
