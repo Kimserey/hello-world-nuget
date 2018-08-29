@@ -22,6 +22,13 @@ skip_tags: true
 
 skip_branch_with_pr: true
 
+pull_requests:
+  do_not_increment_build_number: true
+
+skip_commits:
+  files:
+    - **/*.yml
+
 #---------------------------------#
 #    environment configuration    #
 #---------------------------------#
@@ -31,8 +38,8 @@ environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
 
-# nuget:
-#  disable_publish_on_pr: true
+nuget:
+  disable_publish_on_pr: true
 
 #---------------------------------#
 #       build configuration       #
