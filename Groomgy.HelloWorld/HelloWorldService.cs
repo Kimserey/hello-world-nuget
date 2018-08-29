@@ -11,5 +11,10 @@
         {
             return "Bye bye";
         }
+
+        public string GoodEvening( some problem here
+        {
+            return "Good evening";
+        }
     }
 }
