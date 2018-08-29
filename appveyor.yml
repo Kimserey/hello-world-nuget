@@ -31,8 +31,8 @@ environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
 
-nuget:
-  disable_publish_on_pr: true
+# nuget:
+#  disable_publish_on_pr: true
 
 #---------------------------------#
 #       build configuration       #
