@@ -15,11 +15,11 @@ Target.create "Clean" (fun _ ->
     |> Shell.cleanDirs 
 )
 
-Target.create "Version" (fun _ -> 
+Target.create "GitVersion" (fun _ -> 
     Shell.Exec("gitversion", "/l console /output buildserver /updateAssemblyInfo")
     |> ignore)
 
-Target.create "Build" (fun _ ->
+Target.create "DotNetBuild" (fun _ ->
     !! "**/*.*proj"
     |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = configuration }))
 )
@@ -36,15 +36,14 @@ Target.create "Pack" (fun _ ->
         "./Groomgy.HelloWorld"
 )
 
+Target.create "Build" ignore
+
 Target.create "All" ignore
 
 "Clean"
-  ==> "Version"
-  ==> "Build"
+  ==> "GitVersion"
+  ==> "DotNetBuild"
   ==> "Pack"
   ==> "All"
-
-"Clean"
- ==> "Build"
 
 Target.runOrDefault "Build"
