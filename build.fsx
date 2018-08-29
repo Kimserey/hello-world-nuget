@@ -12,10 +12,10 @@ Target.create "Clean" (fun _ ->
     !! "**/bin"
     ++ "**/obj"
     ++ "artifacts"
-    |> Shell.cleanDirs 
+    |> Shell.cleanDirs
 )
 
-Target.create "GitVersion" (fun _ -> 
+Target.create "GitVersion" (fun _ ->
     Shell.Exec("gitversion", "/l console /output buildserver /updateAssemblyInfo")
     |> ignore)
 
@@ -25,9 +25,9 @@ Target.create "DotNetBuild" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    DotNet.pack 
-        (fun opts -> 
-            { opts with 
+    DotNet.pack
+        (fun opts ->
+            { opts with
                 Configuration = configuration
                 OutputPath = Some "../artifacts/Groomgy.HelloWorld"
                 VersionSuffix = Some ""

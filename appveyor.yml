@@ -17,7 +17,7 @@ dotnet_csproj:
 branches:
   only:
   - master
-  
+
 skip_tags: true
 
 skip_branch_with_pr: true
@@ -28,6 +28,8 @@ pull_requests:
 skip_commits:
   files:
     - '**/*.yml'
+    - '**/*.fsx'
+    - '**/*.cmd'
 
 #---------------------------------#
 #    environment configuration    #
