@@ -1,4 +1,5 @@
 #load ".fake/build.fsx/intellisense.fsx"
+
 open Fake.Core
 open Fake.DotNet
 open Fake.IO
@@ -30,7 +31,11 @@ Target.create "Clean" (fun _ ->
     |> Shell.cleanDirs
 )
 
-Target.create "GitVersion" (fun _ ->
+Target.create "Versions" (fun _ ->
+    Environment.setEnvironVar "appveyor_build_version" (GitVersion.fullSemVer())
+)
+
+Target.create "AssemblyInfo" (fun _ ->
     GitVersion.exec "/updateassemblyinfo" |> ignore
 )
 
@@ -54,7 +59,8 @@ Target.create "Pack" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
-  ==> "GitVersion"
+  ==> "Versions"
+  ==> "AssemblyInfo"
   ==> "DotNetBuild"
   ==> "Pack"
   ==> "All"

@@ -72,6 +72,7 @@ deploy:
       secure: w9QUr4WEITnD4d+d/btMV7BbTpz6ZQmHfWOQ6jazhF72gGgXfPSaTp3KgO34YQ6A
 
   - provider: GitHub
+    tag: $(appveyor_build_version)
     description: ''
     auth_token:
       secure: XUe++IN5fwLVTJC5RIWWMswUwAGMlmYBdNevE0rXCUYl8Qv3xGIjwQo3y5+Pn4rF
