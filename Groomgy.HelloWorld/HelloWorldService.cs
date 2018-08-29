@@ -16,5 +16,10 @@
         {
             return "Good evening";
         }
+
+        public string GoodNight()
+        {
+            return "Good night";
+        }
     }
 }
