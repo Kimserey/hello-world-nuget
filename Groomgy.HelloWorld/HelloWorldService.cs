@@ -12,7 +12,7 @@
             return "Bye bye";
         }
 
-        public string GoodEvening( some problem here
+        public string GoodEvening()
         {
             return "Good evening";
         }
