@@ -3,7 +3,7 @@
 #---------------------------------#
 
 # Reset the build number at each minor releases.
-version: '{version}'
+version: '{build}'
 
 dotnet_csproj:
   patch: true
