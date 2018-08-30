@@ -21,8 +21,7 @@ module GitVersion =
         result.Messages |> List.head
 
     let fullSemVer () = getVar "FullSemVer"
-    let nugetVer () = getVar "NuGetVer"
-    let semVer () = getVar "SemVer"
+    let nugetVer () = getVar "NuGetVersionV2"
 
 module AppVeyor =
     let updateBuildVersion version =
