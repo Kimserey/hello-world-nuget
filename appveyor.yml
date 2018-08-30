@@ -49,9 +49,9 @@ nuget:
 # install:
   # - choco install gitversion.portable -pre -y
 
-install:
+init:
   # - ps: gitversion /l console /output buildserver /updateAssemblyInfo
-  - ps: appveyor version "1.1.1-test"
+  - cmd: appveyor UpdateBuild -Version "1.1.1-test"
 
 build_script:
 - .\fake run build.fsx -t All
