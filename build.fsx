@@ -21,11 +21,16 @@ module GitVersion =
         result.Messages |> List.head
 
     let fullSemVer () = getVar "FullSemVer"
-    let nugetVer () = getVar "NuGetVersionV2"
+    let nugetVer   () = getVar "NuGetVersionV2"
+    let semVer     () = getVar "SemVer"
 
 module AppVeyor =
     let updateBuildVersion version =
         Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" version)
+        |> ignore
+
+    let setSemVerEnvVariable version =
+        Shell.Exec("appveyor", sprintf "SetVariable -Name SemVer %s" version)
         |> ignore
 
 module Environment =
@@ -42,6 +47,7 @@ Target.create "Clean" (fun _ ->
 Target.create "Version" (fun _ ->
     GitVersion.updateAssemblyInfo()
     AppVeyor.updateBuildVersion (GitVersion.fullSemVer())
+    AppVeyor.setSemVerEnvVariable (GitVersion.semVer())
 )
 
 Target.create "DotNetBuild" (fun _ ->
