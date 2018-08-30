@@ -12,30 +12,12 @@ module GitVersion =
             (fun info -> { info with FileName = "gitversion"; Arguments = args })
             (System.TimeSpan.FromMinutes 2.)
 
-    let updateAssemblyInfo () =
-        exec "/updateassemblyinfo"
-        |> ignore
-
-    let private getVar var =
-        let result = exec <| sprintf "/showvariable %s" var
-        result.Messages |> List.head
-
-    let fullSemVer () = getVar "FullSemVer"
-    let nugetVer   () = getVar "NuGetVersionV2"
-    let semVer     () = getVar "SemVer"
-
-module AppVeyor =
-    let updateBuildVersion version =
-        Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" version)
-        |> ignore
-
-    let setSemVerEnvVariable version =
-        Shell.Exec("appveyor", sprintf "SetVariable -Name SemVer %s" version)
-        |> ignore
-
-module Environment =
+module Env =
     let configuration =
         DotNet.BuildConfiguration.fromEnvironVarOrDefault "BuildConfiguration" DotNet.BuildConfiguration.Debug
+
+    let isAppVeyor =
+        Environment.environVar "Environment" = "appveyor"
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
@@ -44,25 +26,35 @@ Target.create "Clean" (fun _ ->
     |> Shell.cleanDirs
 )
 
-Target.create "Version" (fun _ ->
-    GitVersion.updateAssemblyInfo()
-    AppVeyor.updateBuildVersion (GitVersion.fullSemVer())
-    AppVeyor.setSemVerEnvVariable (GitVersion.semVer())
+Target.create "PatchAssemblyInfo" (fun _ ->
+    GitVersion.exec "/updateassemblyinfo"
+    |> ignore
+)
+
+Target.create "UpdateAppVeyorBuildVersion" (fun _ ->
+    let fullSemVer =
+        (GitVersion.exec "/showvariable FullSemVer").Messages |> List.head
+
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" fullSemVer)
+    |> ignore
 )
 
 Target.create "DotNetBuild" (fun _ ->
     !! "**/*.*proj"
-    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Environment.configuration }))
+    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Env.configuration }))
 )
 
 Target.create "Pack" (fun _ ->
+    let nugetVer  =
+        (GitVersion.exec "/showvariable NuGetVersionV2").Messages |> List.head
+
     DotNet.pack
         (fun opts ->
             { opts with
-                Configuration = Environment.configuration
+                Configuration = Env.configuration
                 OutputPath = Some "../artifacts/Groomgy.HelloWorld"
                 NoBuild = true
-                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" (GitVersion.nugetVer()) }
+                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" nugetVer }
             })
         "./Groomgy.HelloWorld"
 )
@@ -70,7 +62,8 @@ Target.create "Pack" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
-  ==> "Version"
+  =?> ("PatchAssemblyInfo", Env.isAppVeyor)
+  =?> ("UpdateAppVeyorBuildVersion", Env.isAppVeyor)
   ==> "DotNetBuild"
   ==> "Pack"
   ==> "All"
