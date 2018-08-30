@@ -17,9 +17,6 @@ environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
 
-nuget:
-  disable_publish_on_pr: true
-
 install:
   - choco install gitversion.portable -pre -y
 
