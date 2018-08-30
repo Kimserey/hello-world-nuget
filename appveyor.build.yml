@@ -3,6 +3,14 @@ image: Visual Studio 2017
 
 skip_tags: true
 skip_branch_with_pr: true
+skip_commits:
+  files:
+    - docs/**/*
+    - '**/*.md'
+    - .gitignore
+    - CREDITS
+    - LICENSE
+    - '**/*.fsx'
 
 pull_requests:
   do_not_increment_build_number: true
