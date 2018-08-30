@@ -1,15 +1,7 @@
-#---------------------------------#
-#      general configuration      #
-#---------------------------------#
-
 version: '{build}'
-
-branches:
-  only:
-  - master
+image: Visual Studio 2017
 
 skip_tags: true
-
 skip_branch_with_pr: true
 
 pull_requests:
@@ -21,11 +13,6 @@ skip_commits:
     - '**/*.fsx'
     - '**/*.cmd'
 
-#---------------------------------#
-#    environment configuration    #
-#---------------------------------#
-image: Visual Studio 2017
-
 environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
@@ -33,22 +20,13 @@ environment:
 nuget:
   disable_publish_on_pr: true
 
-#---------------------------------#
-#       build configuration       #
-#---------------------------------#
 install:
   - choco install gitversion.portable -pre -y
 
 build_script:
 - .\fake run build.fsx -t All
 
-#---------------------------------#
-#       tests configuration       #
-#---------------------------------#
 test: off
 
-#---------------------------------#
-#      artifacts configuration    #
-#---------------------------------#
 artifacts:
   - path: .\artifacts\**\*.nupkg
