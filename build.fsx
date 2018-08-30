@@ -16,27 +16,15 @@ Target.create "Clean" (fun _ ->
     |> Shell.cleanDirs
 )
 
-Target.create "DotNetBuild" (fun _ ->
+Target.create "Build" (fun _ ->
     !! "**/*.*proj"
     |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Environment.configuration }))
-)
-
-Target.create "Pack" (fun _ ->
-    DotNet.pack
-        (fun opts ->
-            { opts with
-                Configuration = Environment.configuration
-                OutputPath = Some "../artifacts/Groomgy.HelloWorld"
-                NoBuild = true
-                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" (GitVersion.nugetVer()) }
-            })
-        "./Groomgy.HelloWorld"
 )
 
 Target.create "All" ignore
 
 "Clean"
-  ==> "DotNetBuild"
+  ==> "Build"
   ==> "All"
 
-Target.runOrDefault "All"
+Target.runOrDefault "Build"
