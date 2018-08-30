@@ -9,7 +9,7 @@
 
         public string Bye()
         {
-            return "Bye";
+            return "Bye Bye";
         }
 
         public string GoodEvening()
