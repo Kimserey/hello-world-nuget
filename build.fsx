@@ -17,7 +17,7 @@ module Env =
         DotNet.BuildConfiguration.fromEnvironVarOrDefault "BuildConfiguration" DotNet.BuildConfiguration.Debug
 
     let isAppVeyor =
-        Environment.environVar "Environment" = "appveyor"
+        Environment.environVar "BuildEnvironment" = "appveyor"
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
