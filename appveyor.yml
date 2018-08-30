@@ -2,17 +2,7 @@
 #      general configuration      #
 #---------------------------------#
 
-# Reset the build number at each minor releases.
 version: '{build}'
-
-dotnet_csproj:
-  patch: true
-  file: '**\*.csproj'
-  version: '{version}'
-  package_version: '{version}'
-  assembly_version: '{version}'
-  file_version: '{version}'
-  informational_version: '{version}'
 
 branches:
   only:
@@ -46,12 +36,8 @@ nuget:
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
-# install:
-  # - choco install gitversion.portable -pre -y
-
-init:
-  # - ps: gitversion /l console /output buildserver /updateAssemblyInfo
-  - cmd: appveyor UpdateBuild -Version "1.1.1-test"
+install:
+  - choco install gitversion.portable -pre -y
 
 build_script:
 - .\fake run build.fsx -t All
