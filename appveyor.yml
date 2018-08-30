@@ -28,5 +28,5 @@ test: off
 artifacts:
   - path: .\artifacts\**\*.nupkg
 
-deploy_script:
+before_deploy:
   - echo Hello in the deployment
