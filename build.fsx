@@ -47,10 +47,13 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let nuGetVer  =
-        (GitVersion.exec "/showvariable NuGetVersionV2").Messages |> List.head
+    let messages =
+        (GitVersion.exec "/showvariable NuGetVersionV2").Messages
 
-    printfn "NuGet version: %s" nuGetVer
+    printfn "NuGet version: %A" messages
+
+    let nuGetVer  =
+        List.head messages
 
     DotNet.pack
         (fun opts ->
