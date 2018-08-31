@@ -31,10 +31,13 @@ Target.create "PatchAssemblyInfo" (fun _ ->
 )
 
 Target.create "UpdateAppVeyorBuildVersion" (fun _ ->
-    let fullSemVer =
-        (GitVersion.exec "/showvariable FullSemVer").Messages |> List.head
+    let args =
+        (GitVersion.exec "/showvariable FullSemVer").Messages
+        |> List.head
+        |> Environment.environVarOrDefault "appveyor_repo_tag"
+        |>  sprintf "UpdateBuild -Version \"%s\""
 
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" fullSemVer)
+    Shell.Exec("appveyor", args)
     |> ignore
 )
 
