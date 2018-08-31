@@ -34,7 +34,7 @@ Target.create "UpdateAppVeyorBuildVersion" (fun _ ->
     let args =
         (GitVersion.exec "/showvariable FullSemVer").Messages
         |> List.head
-        |> Environment.environVarOrDefault "appveyor_repo_tag"
+        |> Environment.environVarOrDefault "appveyor_repo_tag_name"
         |>  sprintf "UpdateBuild -Version \"%s\""
 
     Shell.Exec("appveyor", args)

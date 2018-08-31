@@ -41,7 +41,7 @@ deploy:
 
   - provider: GitHub
     description: ''
-    release: '$(appveyor_repo_tag)'
+    release: '$(appveyor_repo_tag_name)'
     artifact: /.*\.nupkg/
     auth_token:
       secure: XUe++IN5fwLVTJC5RIWWMswUwAGMlmYBdNevE0rXCUYl8Qv3xGIjwQo3y5+Pn4rF
