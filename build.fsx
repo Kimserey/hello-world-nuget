@@ -6,39 +6,55 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
+let [<Literal>] commit = "APPVEYOR_REPO_COMMIT"
+let [<Literal>] tag = "APPVEYOR_REPO_TAG_NAME"
+
+type UpdateAssemblyInfo = unit -> unit
+type FullSemVer = string
+type NuGetVer = string
+
 module GitVersion =
-    let exec args =
+    let private exec args =
         Process.execWithResult
             (fun info -> { info with FileName = "gitversion"; Arguments = args })
             (System.TimeSpan.FromMinutes 2.)
 
-module Environment =
-    let [<Literal>] appveyorRepoTagName = "appveyor_repo_tag_name"
+    let private execRemote args =
+        Process.execWithResult
+            (fun info -> { info with FileName = "gitversion"; Arguments = (sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /c %s %s" (Environment.environVar commit) args) })
+            (System.TimeSpan.FromMinutes 2.)
 
+    let private version (result: ProcessResult) =
+        result.Messages |> List.head
+
+    let gitVersion: UpdateAssemblyInfo * FullSemVer * NuGetVer =
+        match Environment.environVarOrNone tag with
+        | Some v ->
+            ((fun () -> execRemote "/updateassemblyinfo" |> ignore), v, v)
+        | None ->
+            ((fun () -> exec "/updateassemblyinfo" |> ignore),
+                exec "/showvariable FullSemVer" |> version,
+                exec "/showvariable NuGetVersionV2" |> version)
+
+module Environment =
     let configuration =
         DotNet.BuildConfiguration.fromEnvironVarOrDefault "BuildConfiguration" DotNet.BuildConfiguration.Debug
 
-    let isAppVeyor =
-        Environment.environVar "BuildEnvironment" = "appveyor"
-
-Target.create "Clean" (fun _ ->
+Target.create "Clean" (fun t ->
     !! "**/bin"
     ++ "**/obj"
     |> Shell.cleanDirs
 )
 
 Target.create "PatchAssemblyInfo" (fun _ ->
-    GitVersion.exec "/updateassemblyinfo"
-    |> ignore
+    let (update, _, _) = GitVersion.gitVersion
+    do update()
 )
 
-Target.create "UpdateAppVeyorBuildVersion" (fun _ ->
-    let version =
-        match Environment.environVarOrNone Environment.appveyorRepoTagName with
-        | Some v -> v
-        | None   -> (GitVersion.exec "/showvariable FullSemVer").Messages |> List.head
+Target.create "UpdateBuildVersion" (fun _ ->
+    let (_, fullSemVer, _) = GitVersion.gitVersion
 
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" version)
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" fullSemVer)
     |> ignore
 )
 
@@ -48,10 +64,7 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let version =
-        match Environment.environVarOrNone Environment.appveyorRepoTagName with
-        | Some v -> v
-        | None   -> (GitVersion.exec "/showvariable NuGetVersionV2").Messages |> List.head
+    let (_, _, nuGetVer) = GitVersion.gitVersion
 
     DotNet.pack
         (fun opts ->
@@ -59,16 +72,18 @@ Target.create "Pack" (fun _ ->
                 Configuration = Environment.configuration
                 OutputPath = Some "../artifacts/Groomgy.HelloWorld"
                 NoBuild = true
-                Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" version) }
+                Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nuGetVer) }
             })
         "./Groomgy.HelloWorld"
 )
 
 Target.create "All" ignore
 
+Target.create "x" ignore
+
 "Clean"
-  =?> ("PatchAssemblyInfo", Environment.isAppVeyor)
-  =?> ("UpdateAppVeyorBuildVersion", Environment.isAppVeyor)
+  ==> "PatchAssemblyInfo"
+  ==> "UpdateBuildVersion"
   ==> "Build"
   ==> "Pack"
   ==> "All"
