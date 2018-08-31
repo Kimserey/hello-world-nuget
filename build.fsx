@@ -47,8 +47,10 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let nugetVer  =
+    let nuGetVer  =
         (GitVersion.exec "/showvariable NuGetVersionV2").Messages |> List.head
+
+    printfn "NuGet version: %s" nuGetVer
 
     DotNet.pack
         (fun opts ->
@@ -56,7 +58,7 @@ Target.create "Pack" (fun _ ->
                 Configuration = Env.configuration
                 OutputPath = Some "../artifacts/Groomgy.HelloWorld"
                 NoBuild = true
-                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" nugetVer }
+                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" nuGetVer }
             })
         "./Groomgy.HelloWorld"
 )
