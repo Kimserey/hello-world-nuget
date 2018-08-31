@@ -2,11 +2,6 @@
 {
     public class HelloWorldService
     {
-        public string Say()
-        {
-            return "Hello World";
-        }
-
         public string GoodMorning()
         {
             return "Good morning";
