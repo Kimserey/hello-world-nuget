@@ -12,7 +12,9 @@ module GitVersion =
             (fun info -> { info with FileName = "gitversion"; Arguments = args })
             (System.TimeSpan.FromMinutes 2.)
 
-module Env =
+module Environment =
+    let [<Literal>] appveyorRepoTagName = "appveyor_repo_tag_name"
+
     let configuration =
         DotNet.BuildConfiguration.fromEnvironVarOrDefault "BuildConfiguration" DotNet.BuildConfiguration.Debug
 
@@ -31,37 +33,33 @@ Target.create "PatchAssemblyInfo" (fun _ ->
 )
 
 Target.create "UpdateAppVeyorBuildVersion" (fun _ ->
-    let args =
-        (GitVersion.exec "/showvariable FullSemVer").Messages
-        |> List.head
-        |> Environment.environVarOrDefault "appveyor_repo_tag_name"
-        |>  sprintf "UpdateBuild -Version \"%s\""
+    let version =
+        match Environment.environVarOrNone Environment.appveyorRepoTagName with
+        | Some v -> v
+        | None   -> (GitVersion.exec "/showvariable FullSemVer").Messages |> List.head
 
-    Shell.Exec("appveyor", args)
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" version)
     |> ignore
 )
 
 Target.create "Build" (fun _ ->
     !! "**/*.*proj"
-    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Env.configuration }))
+    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Environment.configuration }))
 )
 
 Target.create "Pack" (fun _ ->
-    let messages =
-        (GitVersion.exec "/showvariable NuGetVersionV2").Messages
-
-    printfn "NuGet version: %A" messages
-
-    let nuGetVer  =
-        List.head messages
+    let version =
+        match Environment.environVarOrNone Environment.appveyorRepoTagName with
+        | Some v -> v
+        | None   -> (GitVersion.exec "/showvariable NuGetVersionV2").Messages |> List.head
 
     DotNet.pack
         (fun opts ->
             { opts with
-                Configuration = Env.configuration
+                Configuration = Environment.configuration
                 OutputPath = Some "../artifacts/Groomgy.HelloWorld"
                 NoBuild = true
-                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" nuGetVer }
+                Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" version) }
             })
         "./Groomgy.HelloWorld"
 )
@@ -69,8 +67,8 @@ Target.create "Pack" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
-  =?> ("PatchAssemblyInfo", Env.isAppVeyor)
-  =?> ("UpdateAppVeyorBuildVersion", Env.isAppVeyor)
+  =?> ("PatchAssemblyInfo", Environment.isAppVeyor)
+  =?> ("UpdateAppVeyorBuildVersion", Environment.isAppVeyor)
   ==> "Build"
   ==> "Pack"
   ==> "All"
