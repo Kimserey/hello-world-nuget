@@ -3,6 +3,7 @@ image: Visual Studio 2017
 
 skip_tags: true
 skip_branch_with_pr: true
+
 skip_commits:
   files:
     - docs/**/*
@@ -27,3 +28,22 @@ build_script:
 - .\fake run build.fsx -t All
 
 test: off
+
+deploy:
+  - provider: NuGet
+    artifact: /.\*.nupkg/
+    api_key:
+      secure: w9QUr4WEITnD4d+d/btMV7BbTpz6ZQmHfWOQ6jazhF72gGgXfPSaTp3KgO34YQ6A
+    on:
+      branch: master
+      appveyor_repo_tag: true
+
+  - provider: GitHub
+    description: ''
+    release: '$(appveyor_repo_tag)'
+    artifact: /.*\.nupkg/
+    auth_token:
+      secure: XUe++IN5fwLVTJC5RIWWMswUwAGMlmYBdNevE0rXCUYl8Qv3xGIjwQo3y5+Pn4rF
+    on:
+      branch: master
+      appveyor_repo_tag: true

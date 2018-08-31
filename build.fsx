@@ -25,6 +25,11 @@ Target.create "Clean" (fun _ ->
     |> Shell.cleanDirs
 )
 
+Target.create "PatchAssemblyInfo" (fun _ ->
+    GitVersion.exec "/updateassemblyinfo"
+    |> ignore
+)
+
 Target.create "UpdateAppVeyorBuildVersion" (fun _ ->
     let fullSemVer =
         (GitVersion.exec "/showvariable FullSemVer").Messages |> List.head
@@ -38,11 +43,28 @@ Target.create "Build" (fun _ ->
     |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Env.configuration }))
 )
 
+Target.create "Pack" (fun _ ->
+    let nugetVer  =
+        (GitVersion.exec "/showvariable NuGetVersionV2").Messages |> List.head
+
+    DotNet.pack
+        (fun opts ->
+            { opts with
+                Configuration = Env.configuration
+                OutputPath = Some "../artifacts/Groomgy.HelloWorld"
+                NoBuild = true
+                Common = { opts.Common with CustomParams = Some <| sprintf "/p:PackageVersion=%s" nugetVer }
+            })
+        "./Groomgy.HelloWorld"
+)
+
 Target.create "All" ignore
 
 "Clean"
+  =?> ("PatchAssemblyInfo", Env.isAppVeyor)
   =?> ("UpdateAppVeyorBuildVersion", Env.isAppVeyor)
   ==> "Build"
+  ==> "Pack"
   ==> "All"
 
 Target.runOrDefault "Build"
