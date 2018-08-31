@@ -29,6 +29,9 @@ build_script:
 
 test: off
 
+artifacts:
+  - path: .\artifacts\**\*.nupkg
+
 deploy:
   - provider: NuGet
     artifact: /.\*.nupkg/
