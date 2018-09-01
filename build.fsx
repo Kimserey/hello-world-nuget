@@ -6,31 +6,37 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
-let [<Literal>] commit = "APPVEYOR_REPO_COMMIT"
-let [<Literal>] tag = "APPVEYOR_REPO_TAG_NAME"
-
 type UpdateAssemblyInfo = unit -> unit
 type FullSemVer = string
 type NuGetVer = string
 
 module GitVersion =
+    let [<Literal>] appveyor_commit = "APPVEYOR_REPO_COMMIT"
+    let [<Literal>] appveyor_tag = "APPVEYOR_REPO_TAG_NAME"
+
     let private exec args =
         Process.execWithResult
             (fun info -> { info with FileName = "gitversion"; Arguments = args })
             (System.TimeSpan.FromMinutes 2.)
 
-    let private execRemote args =
+    let private execRemote commit args =
         Process.execWithResult
-            (fun info -> { info with FileName = "gitversion"; Arguments = (sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /b master /c %s %s" (Environment.environVar commit) args) })
+            (fun info -> { info with FileName = "gitversion"; Arguments = (sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /b master /c %s %s" commit args) })
             (System.TimeSpan.FromMinutes 2.)
 
     let private version (result: ProcessResult) =
         result.Messages |> List.head
 
     let (updateAssemblyInfo, fullSemVer, nuGetVer): UpdateAssemblyInfo * FullSemVer * NuGetVer =
-        match Environment.environVarOrNone tag with
-        | Some v -> ((fun () -> execRemote "/updateassemblyinfo" |> ignore), v, v)
+        let commit =
+            Environment.environVar appveyor_commit
+
+        match Environment.environVarOrNone appveyor_tag with
+        | Some v ->
+            printfn "Executing gitversion on checkout commit %s." commit
+            ((fun () -> execRemote "/updateassemblyinfo" |> ignore), v, v)
         | None ->
+            printfn "Executing gitversion on latest master commit %s." commit
             ((fun () -> exec "/updateassemblyinfo" |> ignore),
                 exec "/showvariable FullSemVer" |> version,
                 exec "/showvariable NuGetVersionV2" |> version
