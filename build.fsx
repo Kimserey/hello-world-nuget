@@ -6,7 +6,7 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
-type UpdateAssemblyInfo = unit -> unit
+type UpdateAssemblyInfo = unit -> ProcessResult
 type FullSemVer = string
 type NuGetVer = string
 
@@ -33,11 +33,11 @@ module GitVersion =
 
         match Environment.environVarOrNone appveyor_tag with
         | Some v ->
-            printfn "Executing gitversion on checkout commit %s." commit
-            ((fun () -> execRemote "/updateassemblyinfo" |> ignore), v, v)
+            printfn "Executing gitversion on detached HEAD. %s." commit
+            ((fun () -> execRemote commit "/updateassemblyinfo"), v, v)
         | None ->
-            printfn "Executing gitversion on latest master commit %s." commit
-            ((fun () -> exec "/updateassemblyinfo" |> ignore),
+            printfn "Executing gitversion on master branch. %s" commit
+            ((fun () -> exec "/updateassemblyinfo"),
                 exec "/showvariable FullSemVer" |> version,
                 exec "/showvariable NuGetVersionV2" |> version
         )
@@ -54,6 +54,8 @@ Target.create "Clean" (fun t ->
 
 Target.create "PatchAssemblyInfo" (fun _ ->
     GitVersion.updateAssemblyInfo()
+    |> fun res -> res.Messages
+    |> List.iter (printfn "%s")
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
@@ -79,8 +81,6 @@ Target.create "Pack" (fun _ ->
 )
 
 Target.create "All" ignore
-
-Target.create "x" ignore
 
 "Clean"
   ==> "PatchAssemblyInfo"
