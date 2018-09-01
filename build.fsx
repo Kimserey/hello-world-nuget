@@ -76,29 +76,29 @@ Target.create "UpdateBuildVersion" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
+    let setParams (buildOptions: DotNet.BuildOptions) =
+        { buildOptions with Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }
+
     !! "**/*.*proj"
     -- "**/Groomgy.*Test.*proj"
     -- "**/gitversion/**/*.*proj"
-    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }))
+    |> Seq.iter (DotNet.build setParams)
 )
 
 Target.create "Pack" (fun _ ->
     let (_, _, nuGetVer) = GitVersion.get()
 
+    let setParams (packOptions: DotNet.PackOptions) =
+        { packOptions with
+            Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
+            OutputPath = Some "../artifacts"
+            NoBuild = true
+            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nuGetVer) } }
+
     !! "**/*.*proj"
     -- "**/Groomgy.*Test.*proj"
     -- "**/gitversion/**/*.*proj"
-    |> Seq.iter (fun proj ->
-        DotNet.pack
-            (fun opts ->
-                { opts with
-                    Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
-                    OutputPath = Some "../artifacts"
-                    NoBuild = true
-                    Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nuGetVer) }
-                })
-            proj
-    )
+    |> Seq.iter (DotNet.pack setParams)
 )
 
 Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
