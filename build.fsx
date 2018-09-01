@@ -6,14 +6,17 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
+module Environment =
+    let [<Literal>] APPVEYOR = "APPVEYOR"
+    let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
+    let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
+    let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
+
 type UpdateAssemblyInfo = unit -> ProcessResult
 type FullSemVer = string
 type NuGetVer = string
 
 module GitVersion =
-    let [<Literal>] appveyor_commit = "APPVEYOR_REPO_COMMIT"
-    let [<Literal>] appveyor_tag = "APPVEYOR_REPO_TAG_NAME"
-
     let private exec args =
         Process.execWithResult
             (fun info -> { info with FileName = "gitversion"; Arguments = args })
@@ -29,9 +32,9 @@ module GitVersion =
 
     let (updateAssemblyInfo, fullSemVer, nuGetVer): UpdateAssemblyInfo * FullSemVer * NuGetVer =
         let commit =
-            Environment.environVar appveyor_commit
+            Environment.environVar Environment.APPVEYOR_REPO_COMMIT
 
-        match Environment.environVarOrNone appveyor_tag with
+        match Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME with
         | Some v ->
             printfn "Executing gitversion on detached HEAD. %s." commit
             ((fun () -> execRemote commit "/updateassemblyinfo"), v, v)
@@ -42,13 +45,10 @@ module GitVersion =
                 exec "/showvariable NuGetVersionV2" |> version
         )
 
-module Environment =
-    let configuration =
-        DotNet.BuildConfiguration.fromEnvironVarOrDefault "BuildConfiguration" DotNet.BuildConfiguration.Debug
-
-Target.create "Clean" (fun t ->
+Target.create "Clean" (fun _ ->
     !! "**/bin"
     ++ "**/obj"
+    ++ "**/artifacts"
     |> Shell.cleanDirs
 )
 
@@ -65,26 +65,30 @@ Target.create "UpdateBuildVersion" (fun _ ->
 
 Target.create "Build" (fun _ ->
     !! "**/*.*proj"
-    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = Environment.configuration }))
+    |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }))
 )
 
 Target.create "Pack" (fun _ ->
-    DotNet.pack
-        (fun opts ->
-            { opts with
-                Configuration = Environment.configuration
-                OutputPath = Some "../artifacts/Groomgy.HelloWorld"
-                NoBuild = true
-                Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" GitVersion.nuGetVer) }
-            })
-        "./Groomgy.HelloWorld"
+    !! "**/Groomgy.*.*proj" -- "**/Groomgy.*Test.*proj"
+    |> Seq.toList
+    |> List.iter (fun proj ->
+        DotNet.pack
+            (fun opts ->
+                { opts with
+                    Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
+                    OutputPath = Some "../artifacts"
+                    NoBuild = true
+                    Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" GitVersion.nuGetVer) }
+                })
+            proj
+    )
 )
 
 Target.create "All" ignore
 
 "Clean"
-  ==> "PatchAssemblyInfo"
-  ==> "UpdateBuildVersion"
+  =?> ("PatchAssemblyInfo", Environment.environVarAsBool Environment.APPVEYOR)
+  =?> ("UpdateBuildVersion", Environment.environVarAsBool Environment.APPVEYOR)
   ==> "Build"
   ==> "Pack"
   ==> "All"

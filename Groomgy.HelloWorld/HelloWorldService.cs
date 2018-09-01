@@ -29,7 +29,7 @@
 
         public string CallMyDependency()
         {
-            return "My dependency test";
+            return new HelloWorldDependencyLibrary.MyDependency().Get();
         }
     }
 }

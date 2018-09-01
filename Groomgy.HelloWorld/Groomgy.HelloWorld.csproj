@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Groomgy.DependencyLibrary\Groomgy.DependencyLibrary.csproj" />
+    <ProjectReference Include="..\Groomgy.DependencyLibrary\Groomgy.HelloWorldDependencyLibrary.csproj" />
   </ItemGroup>
 
 </Project>

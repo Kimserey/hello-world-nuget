@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Groomgy.DependencyLibrary
+namespace Groomgy.HelloWorldDependencyLibrary
 {
     public class MyDependency
     {
