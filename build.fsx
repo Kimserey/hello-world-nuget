@@ -27,14 +27,14 @@ module GitVersion =
     let private version (result: ProcessResult) =
         result.Messages |> List.head
 
-    let gitVersion: UpdateAssemblyInfo * FullSemVer * NuGetVer =
+    let (updateAssemblyInfo, fullSemVer, nuGetVer): UpdateAssemblyInfo * FullSemVer * NuGetVer =
         match Environment.environVarOrNone tag with
-        | Some v ->
-            ((fun () -> execRemote "/updateassemblyinfo" |> ignore), v, v)
+        | Some v -> ((fun () -> execRemote "/updateassemblyinfo" |> ignore), v, v)
         | None ->
             ((fun () -> exec "/updateassemblyinfo" |> ignore),
                 exec "/showvariable FullSemVer" |> version,
-                exec "/showvariable NuGetVersionV2" |> version)
+                exec "/showvariable NuGetVersionV2" |> version
+        )
 
 module Environment =
     let configuration =
@@ -47,14 +47,11 @@ Target.create "Clean" (fun t ->
 )
 
 Target.create "PatchAssemblyInfo" (fun _ ->
-    let (update, _, _) = GitVersion.gitVersion
-    do update()
+    GitVersion.updateAssemblyInfo()
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
-    let (_, fullSemVer, _) = GitVersion.gitVersion
-
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" fullSemVer)
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" GitVersion.fullSemVer)
     |> ignore
 )
 
@@ -64,15 +61,13 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let (_, _, nuGetVer) = GitVersion.gitVersion
-
     DotNet.pack
         (fun opts ->
             { opts with
                 Configuration = Environment.configuration
                 OutputPath = Some "../artifacts/Groomgy.HelloWorld"
                 NoBuild = true
-                Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nuGetVer) }
+                Common = { opts.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" GitVersion.nuGetVer) }
             })
         "./Groomgy.HelloWorld"
 )
