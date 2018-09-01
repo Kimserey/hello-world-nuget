@@ -34,7 +34,6 @@ deploy:
     api_key:
       secure: w9QUr4WEITnD4d+d/btMV7BbTpz6ZQmHfWOQ6jazhF72gGgXfPSaTp3KgO34YQ6A
     on:
-      branch: master
       appveyor_repo_tag: true
 
   - provider: GitHub
@@ -44,5 +43,4 @@ deploy:
     auth_token:
       secure: XUe++IN5fwLVTJC5RIWWMswUwAGMlmYBdNevE0rXCUYl8Qv3xGIjwQo3y5+Pn4rF
     on:
-      branch: master
       appveyor_repo_tag: true
