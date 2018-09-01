@@ -7,11 +7,6 @@
             return "Hello World";
         }
 
-        public string GoodMorning()
-        {
-            return "Good morning";
-        }
-
         public string Bye()
         {
             return "Bye Bye";
