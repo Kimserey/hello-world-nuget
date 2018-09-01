@@ -7,6 +7,11 @@
             return "Hello World";
         }
 
+        public string SayMore()
+        {
+            return "Hello World More";
+        }
+
         public string GoodMorning()
         {
             return "Good morning";
