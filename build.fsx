@@ -17,14 +17,13 @@ type FullSemVer = string
 type NuGetVer = string
 
 module GitVersion =
-    let private exec args =
+    let private exec commit args =
         Process.execWithResult
-            (fun info -> { info with FileName = "gitversion"; Arguments = args })
-            (System.TimeSpan.FromMinutes 2.)
-
-    let private execRemote commit args =
-        Process.execWithResult
-            (fun info -> { info with FileName = "gitversion"; Arguments = (sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /b master /c %s %s" commit args) })
+            (fun info ->
+                { info with
+                    FileName = "gitversion"
+                    Arguments = sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /b master /c %s %s" commit args
+                })
             (System.TimeSpan.FromMinutes 2.)
 
     let private version (result: ProcessResult) =
@@ -34,16 +33,17 @@ module GitVersion =
         let commit =
             Environment.environVar Environment.APPVEYOR_REPO_COMMIT
 
+        printfn "Executing gitversion on detached HEAD. %s." commit
+
         match Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME with
         | Some v ->
-            printfn "Executing gitversion on detached HEAD. %s." commit
-            ((fun () -> execRemote commit "/updateassemblyinfo"), v, v)
+            printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" v v
+            ((fun () -> exec commit "/updateassemblyinfo"), v, v)
         | None ->
-            printfn "Executing gitversion on master branch. %s" commit
-            ((fun () -> exec "/updateassemblyinfo"),
-                exec "/showvariable FullSemVer" |> version,
-                exec "/showvariable NuGetVersionV2" |> version
-        )
+            let fullSemVer = exec commit "/showvariable FullSemVer" |> version
+            let nuGetVer = exec commit "/showvariable NuGetVersionV2" |> version
+            printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" fullSemVer nuGetVer
+            ((fun () -> exec commit "/updateassemblyinfo"), fullSemVer, nuGetVer)
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
