@@ -29,7 +29,7 @@
 
         public string CallMyDependency()
         {
-            return "My dependency";
+            return "My dependency test";
         }
     }
 }
