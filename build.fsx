@@ -25,7 +25,7 @@ module GitVersion =
         result.Messages |> List.head
 
     let get =
-        let mutable value = None
+        let mutable value: Option<(unit -> ProcessResult) * string * string> = None
 
         fun () ->
             match value with
@@ -35,7 +35,7 @@ module GitVersion =
                     | Some c -> c
                     | None -> Process.exec (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" }) |> getResult
 
-                printfn "Executing gitversion on detached HEAD. %s." commit
+                printfn "Executing gitversion from commit '%s'." commit
 
                 match Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME with
                 | Some v ->
@@ -47,16 +47,16 @@ module GitVersion =
                     printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" fullSemVer nuGetVer
                     value <- Some ((fun () -> exec commit "/updateassemblyinfo"), fullSemVer, nuGetVer)
 
+                Target.activateFinal "ClearGitVersionRepositoryLocation"
                 Option.get value
             | Some v -> v
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
     ++ "**/obj"
-    ++ "artifacts"
+    ++ "**/artifacts"
     ++ "gitversion"
-    |> Seq.map(fun x -> printfn "%s" x; x)
-    |> Shell.cleanDirs
+    |> Shell.deleteDirs
 )
 
 Target.create "PatchAssemblyInfo" (fun _ ->
@@ -76,15 +76,18 @@ Target.create "UpdateBuildVersion" (fun _ ->
 
 Target.create "Build" (fun _ ->
     !! "**/*.*proj"
+    -- "**/Groomgy.*Test.*proj"
+    -- "**/gitversion/**/*.*proj"
     |> Seq.iter (DotNet.build (fun opts -> { opts with Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }))
 )
 
 Target.create "Pack" (fun _ ->
     let (_, _, nuGetVer) = GitVersion.get()
 
-    !! "**/Groomgy.*.*proj" -- "**/Groomgy.*Test.*proj"
-    |> Seq.toList
-    |> List.iter (fun proj ->
+    !! "**/*.*proj"
+    -- "**/Groomgy.*Test.*proj"
+    -- "**/gitversion/**/*.*proj"
+    |> Seq.iter (fun proj ->
         DotNet.pack
             (fun opts ->
                 { opts with
@@ -95,6 +98,10 @@ Target.create "Pack" (fun _ ->
                 })
             proj
     )
+)
+
+Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
+    Shell.deleteDir "gitversion"
 )
 
 Target.create "All" ignore
