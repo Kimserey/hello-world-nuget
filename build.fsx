@@ -11,27 +11,28 @@ module Environment =
     let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
     let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
+    let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
 type UpdateAssemblyInfo = unit -> ProcessResult
 type FullSemVer = string
 type NuGetVer = string
 
 module GitVersion =
-    let private exec commit args =
-        Process.execWithResult
-            (fun info ->
-                { info with
-                    FileName = "gitversion"
-                    Arguments = sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /b master /c %s %s" commit args
-                })
-            (System.TimeSpan.FromMinutes 2.)
+    module Process =
+        let exec f =
+            Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
 
-    let private version (result: ProcessResult) =
+    let private exec commit args =
+        Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/url %s /b master /c %s %s" Environment.REPOSITORY commit args })
+
+    let private getResult (result: ProcessResult) =
         result.Messages |> List.head
 
     let (updateAssemblyInfo, fullSemVer, nuGetVer): UpdateAssemblyInfo * FullSemVer * NuGetVer =
         let commit =
-            Environment.environVar Environment.APPVEYOR_REPO_COMMIT
+            match Environment.environVarOrNone Environment.APPVEYOR_REPO_COMMIT with
+            | Some c -> c
+            | None -> Process.exec (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" }) |> getResult
 
         printfn "Executing gitversion on detached HEAD. %s." commit
 
@@ -40,8 +41,8 @@ module GitVersion =
             printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" v v
             ((fun () -> exec commit "/updateassemblyinfo"), v, v)
         | None ->
-            let fullSemVer = exec commit "/showvariable FullSemVer" |> version
-            let nuGetVer = exec commit "/showvariable NuGetVersionV2" |> version
+            let fullSemVer = exec commit "/showvariable FullSemVer" |> getResult
+            let nuGetVer = exec commit "/showvariable NuGetVersionV2" |> getResult
             printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" fullSemVer nuGetVer
             ((fun () -> exec commit "/updateassemblyinfo"), fullSemVer, nuGetVer)
 
