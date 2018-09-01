@@ -26,5 +26,10 @@
         {
             return "Good night";
         }
+
+        public string CallMyDependency()
+        {
+            return "My dependency";
+        }
     }
 }
