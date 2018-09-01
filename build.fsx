@@ -53,7 +53,7 @@ module GitVersion =
 Target.create "Clean" (fun _ ->
     !! "**/bin"
     ++ "**/obj"
-    ++ "**/artifacts"
+    ++ "artifacts"
     ++ "gitversion"
     |> Seq.map(fun x -> printfn "%s" x; x)
     |> Shell.cleanDirs
