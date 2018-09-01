@@ -21,7 +21,7 @@ module GitVersion =
 
     let private execRemote args =
         Process.execWithResult
-            (fun info -> { info with FileName = "gitversion"; Arguments = (sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /c %s %s" (Environment.environVar commit) args) })
+            (fun info -> { info with FileName = "gitversion"; Arguments = (sprintf "/url https://github.com/Kimserey/hello-world-nuget.git /b master /c %s %s" (Environment.environVar commit) args) })
             (System.TimeSpan.FromMinutes 2.)
 
     let private version (result: ProcessResult) =
