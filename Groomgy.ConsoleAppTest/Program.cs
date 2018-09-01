@@ -7,7 +7,7 @@ namespace Groomgy.TestConsoleApp
     {
         static void Main(string[] args)
         {
-            Console.WriteLine(new HelloWorldService().Say());
+            Console.WriteLine(new HelloWorldService().CallMyDependency());
             Console.ReadLine();
         }
     }
