@@ -2,11 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RepositoryUrl>https://github.com/Kimserey/hello-world-nuget</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseUrl>https://github.com/Kimserey/hello-world-nuget/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/Kimserey/hello-world-nuget</PackageProjectUrl>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
 </Project>
