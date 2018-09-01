@@ -1,4 +1,5 @@
 #load ".fake/build.fsx/intellisense.fsx"
+#nowarn "3180"
 
 open Fake.Core
 open Fake.DotNet
