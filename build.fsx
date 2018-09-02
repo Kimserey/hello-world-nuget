@@ -25,8 +25,8 @@ module GitVersion =
             { info with
                 FileName = "gitversion"
                 Arguments = sprintf "/url %s /b %s /dynamicRepoLocation .\gitversion /c %s %s"
-                    (Environment.environVarOrDefault Environment.APPVEYOR_REPO_BRANCH "master")
                     Environment.REPOSITORY
+                    (Environment.environVarOrDefault Environment.APPVEYOR_REPO_BRANCH "master")
                     commit
                     args })
 
