@@ -21,6 +21,7 @@ module GitVersion =
             Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
 
     let private exec commit args =
+        printfn "Repository branch: '%s'" (Environment.environVar Environment.APPVEYOR_REPO_BRANCH)
         Process.exec (fun info ->
             { info with
                 FileName = "gitversion"
