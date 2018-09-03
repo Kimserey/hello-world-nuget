@@ -14,7 +14,7 @@
 
         public string GoodNight()
         {
-            return "Good night";
+            return "Good night test";
         }
 
         public string CallMyDependency()
