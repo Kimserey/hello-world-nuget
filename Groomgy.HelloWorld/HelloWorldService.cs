@@ -17,6 +17,11 @@
             return "Good evening";
         }
 
+        public string GoodEvening2()
+        {
+            return "Good evening2";
+        }
+
         public string GoodNight()
         {
             return "Good night";
