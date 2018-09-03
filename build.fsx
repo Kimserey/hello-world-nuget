@@ -16,19 +16,21 @@ module Environment =
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
 module GitVersion =
+    open System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView
+
     module Process =
         let exec f =
             Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
 
     let private exec commit args =
-        Process.exec (fun info ->
-            { info with
-                FileName = "gitversion"
-                Arguments = sprintf "/url %s /b b.%s /dynamicRepoLocation .\gitversion /c %s %s"
-                    Environment.REPOSITORY
-                    (Environment.environVarOrDefault Environment.APPVEYOR_REPO_BRANCH "master")
-                    commit
-                    args })
+        match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH with
+        | Some branch->
+            Process.exec (fun info ->
+                { info with
+                    FileName = "gitversion"
+                    Arguments = sprintf "/url %s /b b.%s /dynamicRepoLocation .\gitversion /c %s %s" Environment.REPOSITORY branch commit args })
+        | None ->
+            Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "%s" args })
 
     let private getResult (result: ProcessResult) =
         result.Messages |> List.head
