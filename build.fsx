@@ -21,11 +21,10 @@ module GitVersion =
             Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
 
     let private exec commit args =
-        printfn "Repository branch: '%s'" (Environment.environVar Environment.APPVEYOR_REPO_BRANCH)
         Process.exec (fun info ->
             { info with
                 FileName = "gitversion"
-                Arguments = sprintf "/url %s /b %s /dynamicRepoLocation .\gitversion /c %s %s"
+                Arguments = sprintf "/url %s /b b.%s /dynamicRepoLocation .\gitversion /c %s %s"
                     Environment.REPOSITORY
                     (Environment.environVarOrDefault Environment.APPVEYOR_REPO_BRANCH "master")
                     commit
