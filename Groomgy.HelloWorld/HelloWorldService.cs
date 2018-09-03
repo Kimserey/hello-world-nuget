@@ -12,6 +12,11 @@
             return "Good morning";
         }
 
+        public string GoodAfternoon()
+        {
+            return "Good afternoon";
+        }
+
         public string GoodEvening()
         {
             return "Good evening";
