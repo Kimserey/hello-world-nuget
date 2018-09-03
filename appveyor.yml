@@ -1,6 +1,5 @@
 version: '{build}'
 image: Visual Studio 2017
-max_jobs: 1
 skip_branch_with_pr: true
 
 skip_commits:
@@ -17,9 +16,6 @@ pull_requests:
 environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
-
-cache:
-  - packages\build
 
 install:
   - choco install gitversion.portable -pre -y
