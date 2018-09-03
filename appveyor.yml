@@ -18,6 +18,9 @@ environment:
   VisualStudioVersion: 15.0
   BuildConfiguration: release
 
+cache:
+  - packages\build
+
 install:
   - choco install gitversion.portable -pre -y
 

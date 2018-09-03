@@ -7,17 +7,17 @@
             return "Hello World";
         }
 
+        public string GoodMorning()
+        {
+            return "Good morning";
+        }
+
         public string GoodEvening()
         {
             return "Good evening";
         }
 
         public string GoodNight()
-        {
-            return "Good night test";
-        }
-
-        public string GoodNight2()
         {
             return "Good night";
         }
