@@ -27,7 +27,7 @@ module GitVersion =
             Process.exec (fun info ->
                 { info with
                     FileName = "gitversion"
-                    Arguments = sprintf "/url %s /b b.%s /dynamicRepoLocation .\gitversion /c %s %s" Environment.REPOSITORY branch commit args })
+                    Arguments = sprintf "/url %s /b b-%s /dynamicRepoLocation .\gitversion /c %s %s" Environment.REPOSITORY branch commit args })
         | _ ->
             Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = args })
 
