@@ -9,7 +9,7 @@ open Fake.Core.TargetOperators
 
 module Environment =
     let [<Literal>] APPVEYOR = "APPVEYOR"
-    let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH "
+    let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH"
     let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
     let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
