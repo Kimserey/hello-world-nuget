@@ -12,6 +12,7 @@ module Environment =
     let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH"
     let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
     let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
+    let [<Literal>] APPVEYOR_PULL_REQUEST_NUMBER = "APPVEYOR_PULL_REQUEST_NUMBER"
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
@@ -21,13 +22,13 @@ module GitVersion =
             Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
 
     let private exec commit args =
-        match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH with
-        | Some branch->
+        match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER with
+        | Some branch, None ->
             Process.exec (fun info ->
                 { info with
                     FileName = "gitversion"
                     Arguments = sprintf "/url %s /b b.%s /dynamicRepoLocation .\gitversion /c %s %s" Environment.REPOSITORY branch commit args })
-        | None ->
+        | _ ->
             Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = args })
 
     let private getResult (result: ProcessResult) =
