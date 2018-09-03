@@ -81,7 +81,7 @@ Target.create "PatchAssemblyInfo" (fun _ ->
 Target.create "UpdateBuildVersion" (fun _ ->
     let (_, fullSemVer, _) = GitVersion.get()
 
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer Environment.var Environment.APPVEYOR_BUILD_NUMBER)
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
     |> ignore
 )
 
