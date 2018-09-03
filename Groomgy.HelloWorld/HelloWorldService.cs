@@ -7,6 +7,11 @@
             return "Hello World";
         }
 
+        public string GoodMorning()
+        {
+            return "Good morning";
+        }
+
         public string GoodEvening()
         {
             return "Good evening";
