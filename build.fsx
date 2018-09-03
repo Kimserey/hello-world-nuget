@@ -16,8 +16,6 @@ module Environment =
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
 module GitVersion =
-    open System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView
-
     module Process =
         let exec f =
             Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
