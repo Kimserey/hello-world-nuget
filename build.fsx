@@ -28,7 +28,7 @@ module GitVersion =
                     FileName = "gitversion"
                     Arguments = sprintf "/url %s /b b.%s /dynamicRepoLocation .\gitversion /c %s %s" Environment.REPOSITORY branch commit args })
         | None ->
-            Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "%s" args })
+            Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = args })
 
     let private getResult (result: ProcessResult) =
         result.Messages |> List.head
