@@ -9,10 +9,11 @@ open Fake.Core.TargetOperators
 
 module Environment =
     let [<Literal>] APPVEYOR = "APPVEYOR"
+    let [<Literal>] APPVEYOR_BUILD_NUMBER = "APPVEYOR_BUILD_NUMBER"
+    let [<Literal>] APPVEYOR_PULL_REQUEST_NUMBER = "APPVEYOR_PULL_REQUEST_NUMBER"
     let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH"
     let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
     let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
-    let [<Literal>] APPVEYOR_PULL_REQUEST_NUMBER = "APPVEYOR_PULL_REQUEST_NUMBER"
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
@@ -80,7 +81,7 @@ Target.create "PatchAssemblyInfo" (fun _ ->
 Target.create "UpdateBuildVersion" (fun _ ->
     let (_, fullSemVer, _) = GitVersion.get()
 
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s\"" fullSemVer)
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer Environment.var Environment.APPVEYOR_BUILD_NUMBER)
     |> ignore
 )
 
