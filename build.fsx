@@ -9,6 +9,7 @@ open Fake.Core.TargetOperators
 
 module Environment =
     let [<Literal>] APPVEYOR = "APPVEYOR"
+    let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH"
     let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
     let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
@@ -20,7 +21,15 @@ module GitVersion =
             Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
 
     let private exec commit args =
-        Process.exec (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/url %s /b master /dynamicRepoLocation .\gitversion /c %s %s" Environment.REPOSITORY commit args })
+        printfn "Repository branch: '%s'" (Environment.environVar Environment.APPVEYOR_REPO_BRANCH)
+        Process.exec (fun info ->
+            { info with
+                FileName = "gitversion"
+                Arguments = sprintf "/url %s /b %s /dynamicRepoLocation .\gitversion /c %s %s"
+                    Environment.REPOSITORY
+                    (Environment.environVarOrDefault Environment.APPVEYOR_REPO_BRANCH "master")
+                    commit
+                    args })
 
     let private getResult (result: ProcessResult) =
         result.Messages |> List.head
