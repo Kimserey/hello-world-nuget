@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>This is a test package returning Hello World</Description>
   </PropertyGroup>
 
   <ItemGroup>

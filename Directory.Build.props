@@ -1,6 +1,5 @@
 <Project>
  <PropertyGroup>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Authors>Kimserey Lam</Authors>
     <RepositoryUrl>https://github.com/Kimserey/hello-world-nuget</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
