@@ -81,7 +81,7 @@ Target.create "Build" (fun _ ->
 
     let setParams (buildOptions: DotNet.BuildOptions) =
         { buildOptions with
-            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:AssemblyVersion=%s" fullSemVer assemblyVer) }
+            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" fullSemVer assemblyVer) }
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }
 
     !! "**/*.*proj"
