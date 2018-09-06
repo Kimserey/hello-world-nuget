@@ -36,7 +36,7 @@ module GitVersion =
         result.Messages |> List.head
 
     let get =
-        let mutable value: Option<(unit -> ProcessResult) * string * string> = None
+        let mutable value: Option<string * string> = None
 
         fun () ->
             match value with
@@ -51,12 +51,12 @@ module GitVersion =
                 match Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME with
                 | Some v ->
                     printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" v v
-                    value <- Some ((fun () -> exec commit "/updateassemblyinfo"), v, v)
+                    value <- Some (v, v)
                 | None ->
                     let fullSemVer = exec commit "/showvariable FullSemVer" |> getResult
                     let nuGetVer = exec commit "/showvariable NuGetVersionV2" |> getResult
                     printfn "Full sementic versioning: '%s', NuGet sementic versioning: '%s'" fullSemVer nuGetVer
-                    value <- Some ((fun () -> exec commit "/updateassemblyinfo"), fullSemVer, nuGetVer)
+                    value <- Some (fullSemVer, nuGetVer)
 
                 Target.activateFinal "ClearGitVersionRepositoryLocation"
                 Option.get value
@@ -70,16 +70,13 @@ Target.create "Clean" (fun _ ->
     |> Shell.deleteDirs
 )
 
-Target.create "PatchAssemblyInfo" (fun _ ->
-    let (updateAssemblyInfo, _, _) = GitVersion.get()
-
-    updateAssemblyInfo()
-    |> fun res -> res.Messages
-    |> List.iter (printfn "%s")
+Target.create "UpdateProjectVersion" (fun _ ->
+    let (fullSemVer, _) = GitVersion.get()
+    ()
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
-    let (_, fullSemVer, _) = GitVersion.get()
+    let (fullSemVer, _) = GitVersion.get()
 
     Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
     |> ignore
@@ -96,7 +93,7 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let (_, _, nuGetVer) = GitVersion.get()
+    let (_, nuGetVer) = GitVersion.get()
 
     let setParams (packOptions: DotNet.PackOptions) =
         { packOptions with
@@ -118,7 +115,7 @@ Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
-  =?> ("PatchAssemblyInfo", Environment.environVarAsBool Environment.APPVEYOR)
+  =?> ("UpdateProjectVersion", Environment.environVarAsBool Environment.APPVEYOR)
   =?> ("UpdateBuildVersion", Environment.environVarAsBool Environment.APPVEYOR)
   ==> "Build"
   ==> "Pack"
