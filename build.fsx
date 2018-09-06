@@ -66,7 +66,7 @@ Target.create "Clean" (fun _ ->
 
 Target.create "PrintVersion" (fun _ ->
     let (fullSemVer, assemblyVer, nugetVer) = GitVersion.get()
-    printfn "Full sementic version: '%s'\nAssembyl version: '%s'\nNuGet sementic version: '%s'" fullSemVer assemblyVer nugetVer
+    printfn "Full sementic version: '%s'\nAssembyly version: '%s'\nNuGet sementic version: '%s'" fullSemVer assemblyVer nugetVer
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
