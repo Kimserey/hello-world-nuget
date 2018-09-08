@@ -36,11 +36,11 @@ before_deploy:
   - ps: Set-AppveyorBuildVariable -Name release_notes -Value $release_notes
 
 deploy:
-  #- provider: NuGet
-  #  api_key:
-  #    secure: w9QUr4WEITnD4d+d/btMV7BbTpz6ZQmHfWOQ6jazhF72gGgXfPSaTp3KgO34YQ6A
-  #  on:
-  #    appveyor_repo_tag: true
+  - provider: NuGet
+    api_key:
+      secure: w9QUr4WEITnD4d+d/btMV7BbTpz6ZQmHfWOQ6jazhF72gGgXfPSaTp3KgO34YQ6A
+    on:
+      appveyor_repo_tag: true
 
   - provider: GitHub
     description: '$(release_notes)'
