@@ -28,6 +28,9 @@ test: off
 artifacts:
   - path: .\artifacts\**\*.nupkg
 
+before_deploy:
+  - set test=x.x.x
+
 deploy:
   #- provider: NuGet
   #  api_key:
@@ -36,7 +39,7 @@ deploy:
   #    appveyor_repo_tag: true
 
   - provider: GitHub
-    description: 'test $(appveyor_repo_tag_name)'
+    description: 'test $(appveyor_repo_tag_name) $(test)'
     release: '$(appveyor_repo_tag_name)'
     artifact: /.*\.nupkg/
     auth_token:
