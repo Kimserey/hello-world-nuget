@@ -29,16 +29,10 @@ artifacts:
   - path: .\artifacts\**\*.nupkg
 
 before_deploy:
-  - ps: Write-Output "Looking for previous tag..."
   - ps: $prev_commit=git rev-list --tags --skip=1 --max-count=1
-  - ps: Write-Output "Found previous commit: $prev_commit"
   - ps: $prev_tag=git describe --abbrev=0 --tags $prev_commit
-  - ps: Write-Output "Found previous tag: $prev_tag"
   - ps: $range=$prev_tag + ".." + $appveyor_repo_tag_name
-  - ps: Write-Output "Getting logs for range '$range'"
   - ps: $release_notes=git log --pretty=format:"%h %s" $range
-  - ps: Write-Output "Found logs:"
-  - ps: Write-Output $release_notes
 
 deploy:
   #- provider: NuGet
