@@ -32,7 +32,7 @@ before_deploy:
   - ps: >-
       $prev_commit=git rev-list --tags --skip=1 --max-count=1
       $prev_tag=git describe --abbrev=0 --tags $prev_commit
-      $range=$prev_tag + ".." + $(appveyor_repo_tag_name)
+      $range=$prev_tag + ".." + $appveyor_repo_tag_name
       $release_notes=git log --pretty=format:"%h %s" $range
 
 deploy:
