@@ -30,10 +30,16 @@ artifacts:
 
 before_deploy:
   - ps: >-
+      Write-Output "Looking for previous tag..."
       $prev_commit=git rev-list --tags --skip=1 --max-count=1
+      Write-Output "Found previous commit: $prev_commit"
       $prev_tag=git describe --abbrev=0 --tags $prev_commit
+      Write-Output "Found previous tag: $prev_tag"
       $range=$prev_tag + ".." + $appveyor_repo_tag_name
+      Write-Output "Getting logs for range '$range'"
       $release_notes=git log --pretty=format:"%h %s" $range
+      Write-Output "Found logs:"
+      Write-Output $release_notes
 
 deploy:
   #- provider: NuGet
