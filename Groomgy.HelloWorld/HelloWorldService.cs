@@ -17,11 +17,6 @@
             return "Good afternoon";
         }
 
-        public string GoodEvening()
-        {
-            return "Good evening";
-        }
-
         public string CallMyDependency()
         {
             return "My dependency: " + new HelloWorldDependencyLibrary.MyDependency().Get();
