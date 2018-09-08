@@ -18,10 +18,10 @@ environment:
   BuildConfiguration: release
 
 install:
-  - choco install gitversion.portable -pre -y
+  - ps: choco install gitversion.portable -pre -y
 
 build_script:
-- .\fake run build.fsx -t All
+  - ps: .\fake run build.fsx -t All
 
 test: off
 
@@ -29,7 +29,11 @@ artifacts:
   - path: .\artifacts\**\*.nupkg
 
 before_deploy:
-  - set test=x.x.x
+  - ps: >-
+      $prev_commit=git rev-list --tags --skip=1 --max-count=1
+      $prev_tag=git describe --abbrev=0 --tags $prev_commit
+      $range=$prev_tag + ".." + $(appveyor_repo_tag_name)
+      $release_notes=git log --pretty=format:"%h %s" $range
 
 deploy:
   #- provider: NuGet
@@ -39,7 +43,7 @@ deploy:
   #    appveyor_repo_tag: true
 
   - provider: GitHub
-    description: 'test $(appveyor_repo_tag_name) $(test)'
+    description: '$(release_notes)'
     release: '$(appveyor_repo_tag_name)'
     artifact: /.*\.nupkg/
     auth_token:
