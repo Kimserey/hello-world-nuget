@@ -33,6 +33,7 @@ before_deploy:
   - ps: $prev_tag=git describe --abbrev=0 --tags $prev_commit
   - ps: $range=$prev_tag + ".." + $appveyor_repo_tag_name
   - ps: $release_notes=git log --pretty=format:"%h %s" $range
+  - ps: Set-AppveyorBuildVariable -Name release_notes -Value $release_notes
 
 deploy:
   #- provider: NuGet
