@@ -23,6 +23,10 @@
             return "Good afternoon 1";
         }
 
+        public string GoodAfternoon2()
+        {
+            return "Good afternoon 2";
+        }
 
         public string CallMyDependency()
         {
