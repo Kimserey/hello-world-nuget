@@ -18,9 +18,15 @@ module Environment =
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
 module Process =
-    let execProcess f =
-        Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
+    let private timeout =
+        System.TimeSpan.FromMinutes 2.
+
+    let execWithMultiResult f =
+        Process.execWithResult f timeout
         |> fun r -> r.Messages
+
+    let execWithSingleResult f =
+        execWithMultiResult f
         |> List.head
 
 module GitVersion =
@@ -28,19 +34,19 @@ module GitVersion =
         let commit =
             match Environment.environVarOrNone Environment.APPVEYOR_REPO_COMMIT with
             | Some c -> c
-            | None -> Process.execProcess (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
+            | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
 
         printfn "Executing gitversion from commit '%s'." commit
 
         fun variable ->
             match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER with
             | Some branch, None ->
-                Process.execProcess (fun info ->
+                Process.execWithSingleResult (fun info ->
                     { info with
                         FileName = "gitversion"
                         Arguments = sprintf "/showvariable %s /url %s /b b-%s /dynamicRepoLocation .\gitversion /c %s" variable Environment.REPOSITORY branch commit })
             | _ ->
-                Process.execProcess (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
+                Process.execWithSingleResult (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
 
     let get =
         let mutable value: Option<string * string * string> = None
@@ -81,11 +87,12 @@ Target.create "GatherReleaseNotes" (fun _ ->
     let (fullSemVer, _, _) = GitVersion.get()
 
     let prevCommitHash =
-        Process.execProcess (fun info -> { info with FileName = "git"; Arguments = "rev-list --tags --skip=1 --max-count=1" })
+        Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-list --tags --skip=1 --max-count=1" })
     let previousTag =
-        Process.execProcess (fun info -> { info with FileName = "git"; Arguments = sprintf "describe --abbrev=0 --tags %s" prevCommitHash })
+        Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = sprintf "describe --abbrev=0 --tags %s" prevCommitHash })
     let releaseNotes =
-        Process.execProcess (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag fullSemVer})
+        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag fullSemVer})
+        |> String.concat(System.Environment.NewLine)
 
     printfn "Gathered release notes:"
     printfn "%s" releaseNotes
