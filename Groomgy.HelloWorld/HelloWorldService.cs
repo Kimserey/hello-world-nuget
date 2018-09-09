@@ -18,14 +18,14 @@
         }
 
 
-        public string GoodAfternoon1()
+        public string GoodEvening()
         {
-            return "Good afternoon 1";
+            return "Good evening";
         }
 
-        public string GoodAfternoon2()
+        public string GoodNight()
         {
-            return "Good afternoon 2";
+            return "Good night";
         }
 
         public string CallMyDependency()
