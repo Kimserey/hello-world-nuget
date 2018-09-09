@@ -51,6 +51,10 @@ module GitVersion =
     let get =
         let mutable value: Option<string * string * string> = None
 
+        Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
+            Shell.deleteDir "gitversion"
+        )
+
         fun () ->
             match value with
             | None ->
@@ -129,10 +133,6 @@ Target.create "Pack" (fun _ ->
     -- "**/Groomgy.*Test.*proj"
     -- "**/gitversion/**/*.*proj"
     |> Seq.iter (DotNet.pack setParams)
-)
-
-Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
-    Shell.deleteDir "gitversion"
 )
 
 Target.create "All" ignore
