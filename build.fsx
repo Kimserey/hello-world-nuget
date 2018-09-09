@@ -17,29 +17,30 @@ module Environment =
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
+module Process =
+    let execProcess f =
+        Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
+        |> fun r -> r.Messages
+        |> List.head
+
 module GitVersion =
     let showVariable =
-        let execProcess f =
-            Process.execWithResult f (System.TimeSpan.FromMinutes 2.)
-            |> fun r -> r.Messages
-            |> List.head
-
         let commit =
             match Environment.environVarOrNone Environment.APPVEYOR_REPO_COMMIT with
             | Some c -> c
-            | None -> execProcess (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
+            | None -> Process.execProcess (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
 
         printfn "Executing gitversion from commit '%s'." commit
 
         fun variable ->
             match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER with
             | Some branch, None ->
-                execProcess (fun info ->
+                Process.execProcess (fun info ->
                     { info with
                         FileName = "gitversion"
                         Arguments = sprintf "/showvariable %s /url %s /b b-%s /dynamicRepoLocation .\gitversion /c %s" variable Environment.REPOSITORY branch commit })
             | _ ->
-                execProcess (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
+                Process.execProcess (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
 
     let get =
         let mutable value: Option<string * string * string> = None
@@ -73,6 +74,23 @@ Target.create "UpdateBuildVersion" (fun _ ->
     let (fullSemVer, _, _) = GitVersion.get()
 
     Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
+    |> ignore
+)
+
+Target.create "GatherReleaseNotes" (fun _ ->
+    let (fullSemVer, _, _) = GitVersion.get()
+
+    let prevCommitHash =
+        Process.execProcess (fun info -> { info with FileName = "git"; Arguments = "rev-list --tags --skip=1 --max-count=1" })
+    let previousTag =
+        Process.execProcess (fun info -> { info with FileName = "git"; Arguments = sprintf "describe --abbrev=0 --tags %s" prevCommitHash })
+    let releaseNotes =
+        Process.execProcess (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag fullSemVer})
+
+    printfn "Gathered release notes:"
+    printfn "%s" releaseNotes
+
+    Shell.Exec("appveyor", sprintf "SetVariable -Name release_notes -Value \"%s\"" releaseNotes)
     |> ignore
 )
 
@@ -115,6 +133,7 @@ Target.create "All" ignore
 "Clean"
   ==> "PrintVersion"
   =?> ("UpdateBuildVersion", Environment.environVarAsBool Environment.APPVEYOR)
+  =?> ("GatherReleaseNotes", not <| String.isNullOrWhiteSpace(Environment.environVar Environment.APPVEYOR_REPO_TAG_NAME))
   ==> "Build"
   ==> "Pack"
   ==> "All"
