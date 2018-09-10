@@ -77,15 +77,14 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "PrintVersion" (fun _ ->
-    let (fullSemVer, assemblyVer, nugetVer, preReleaseTag) = GitVersion.get()
+    let (fullSemVer, assemblyVer, nugetVer) = GitVersion.get()
     printfn "Full sementic version: '%s'" fullSemVer
     printfn "Assembly version: '%s'" assemblyVer
     printfn "NuGet sementic version: '%s'" nugetVer
-    printfn "Pre Releaste Tag: '%s'" preReleaseTag
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
-    let (fullSemVer, _, _, _) = GitVersion.get()
+    let (fullSemVer, _, _) = GitVersion.get()
 
     Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
     |> ignore
