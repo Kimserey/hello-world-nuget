@@ -40,7 +40,7 @@ module GitVersion =
 
         fun variable ->
             match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER with
-            | Some branch, None ->
+            | Some branch, None when branch = "master" ->
                 Process.execWithSingleResult (fun info ->
                     { info with
                         FileName = "gitversion"
@@ -51,10 +51,6 @@ module GitVersion =
     let get =
         let mutable value: Option<string * string * string> = None
 
-        Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
-            Shell.deleteDir "gitversion"
-        )
-
         fun () ->
             match value with
             | None ->
@@ -64,7 +60,12 @@ module GitVersion =
                     showVariable "NuGetVersionV2"
                 )
 
+                Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
+                    Shell.deleteDir "gitversion"
+                )
+
                 Target.activateFinal "ClearGitVersionRepositoryLocation"
+
                 Option.get value
             | Some v -> v
 
@@ -78,8 +79,8 @@ Target.create "Clean" (fun _ ->
 
 Target.create "PrintVersion" (fun _ ->
     let (fullSemVer, assemblyVer, nugetVer) = GitVersion.get()
-    printfn "Full sementic version: '%s'" fullSemVer
-    printfn "Assembly version: '%s'" assemblyVer
+    printfn "Full sementic version: '%s'`" fullSemVer
+    printfn "Assembyly version: '%s'" assemblyVer
     printfn "NuGet sementic version: '%s'" nugetVer
 )
 
