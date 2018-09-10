@@ -58,10 +58,11 @@ module GitVersion =
         fun () ->
             match value with
             | None ->
-                value <-
-                    match Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME with
-                    | Some v -> Some (v, showVariable "AssemblySemVer", v)
-                    | None -> Some (showVariable "FullSemVer", showVariable "AssemblySemVer", showVariable "NuGetVersionV2")
+                value <- Some (
+                    showVariable "FullSemVer",
+                    showVariable "AssemblySemVer",
+                    showVariable "NuGetVersionV2"
+                )
 
                 Target.activateFinal "ClearGitVersionRepositoryLocation"
                 Option.get value
@@ -76,12 +77,15 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "PrintVersion" (fun _ ->
-    let (fullSemVer, assemblyVer, nugetVer) = GitVersion.get()
-    printfn "Full sementic version: '%s'\nAssembyly version: '%s'\nNuGet sementic version: '%s'" fullSemVer assemblyVer nugetVer
+    let (fullSemVer, assemblyVer, nugetVer, preReleaseTag) = GitVersion.get()
+    printfn "Full sementic version: '%s'" fullSemVer
+    printfn "Assembly version: '%s'" assemblyVer
+    printfn "NuGet sementic version: '%s'" nugetVer
+    printfn "Pre Releaste Tag: '%s'" preReleaseTag
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
-    let (fullSemVer, _, _) = GitVersion.get()
+    let (fullSemVer, _, _, _) = GitVersion.get()
 
     Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
     |> ignore
