@@ -22,11 +22,6 @@
             return "Good evening";
         }
 
-        public string GoodEvening1()
-        {
-            return "Good evening 1";
-        }
-
         public string GoodNight()
         {
             return "Good night";
