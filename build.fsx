@@ -7,6 +7,11 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
+type FullSemVer = string
+type AssemblySemVer = string
+type NuGetVersionV2 = string
+type Tag = string
+
 module Environment =
     let [<Literal>] APPVEYOR = "APPVEYOR"
     let [<Literal>] APPVEYOR_BUILD_NUMBER = "APPVEYOR_BUILD_NUMBER"
@@ -29,6 +34,18 @@ module Process =
         execWithMultiResult f
         |> List.head
 
+module Git =
+    let getPreviousTag() =
+        let prevCommitHash = Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-list --tags --skip=1 --max-count=1" })
+        Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = sprintf "describe --abbrev=0 --tags %s" prevCommitHash })
+
+    let getPreviousStableTag() =
+        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = "tag --sort=committerdate" })
+        |> List.rev
+        |> List.skip 1
+        |> List.tryHead
+        |> Option.defaultValue ""
+
 module GitVersion =
     let showVariable =
         let commit =
@@ -49,15 +66,23 @@ module GitVersion =
                 Process.execWithSingleResult (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
 
     let get =
-        let mutable value: Option<string * string * string> = None
+        let mutable value: Option<FullSemVer * AssemblySemVer * NuGetVersionV2 * Tag> = None
 
         fun () ->
             match value with
             | None ->
+                let isStableRelease =
+                    String.isNullOrWhiteSpace(showVariable "PreReleaseTag")
+
+                let previousTag =
+                    if isStableRelease then Git.getPreviousStableTag()
+                    else Git.getPreviousTag()
+
                 value <- Some (
                     showVariable "FullSemVer",
                     showVariable "AssemblySemVer",
-                    showVariable "NuGetVersionV2"
+                    showVariable "NuGetVersionV2",
+                    previousTag
                 )
 
                 Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
@@ -78,26 +103,23 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "PrintVersion" (fun _ ->
-    let (fullSemVer, assemblyVer, nugetVer) = GitVersion.get()
+    let (fullSemVer, assemblyVer, nugetVer, isPreRelease) = GitVersion.get()
     printfn "Full sementic version: '%s'`" fullSemVer
     printfn "Assembyly version: '%s'" assemblyVer
     printfn "NuGet sementic version: '%s'" nugetVer
+    printfn "Is Pre Release version: '%A'" isPreRelease
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
-    let (fullSemVer, _, _) = GitVersion.get()
+    let (fullSemVer, _, _, _) = GitVersion.get()
 
     Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
     |> ignore
 )
 
 Target.create "GatherReleaseNotes" (fun _ ->
-    let (fullSemVer, _, _) = GitVersion.get()
+    let (fullSemVer, _, _, previousTag) = GitVersion.get()
 
-    let prevCommitHash =
-        Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-list --tags --skip=1 --max-count=1" })
-    let previousTag =
-        Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = sprintf "describe --abbrev=0 --tags %s" prevCommitHash })
     let releaseNotes =
         Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag fullSemVer})
         |> String.concat(System.Environment.NewLine)
@@ -110,7 +132,7 @@ Target.create "GatherReleaseNotes" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
-    let (fullSemVer, assemblyVer, _) = GitVersion.get()
+    let (fullSemVer, assemblyVer, _, _) = GitVersion.get()
 
     let setParams (buildOptions: DotNet.BuildOptions) =
         { buildOptions with
@@ -124,7 +146,7 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let (_, _, nuGetVer) = GitVersion.get()
+    let (_, _, nuGetVer, _) = GitVersion.get()
 
     let setParams (packOptions: DotNet.PackOptions) =
         { packOptions with
