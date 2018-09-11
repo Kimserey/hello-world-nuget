@@ -32,9 +32,9 @@
             return "Good night";
         }
 
-        public string CallMyDependency()
-        {
-            return "My dependency: " + new HelloWorldDependencyLibrary.MyDependency().Get();
-        }
+        //public string CallMyDependency()
+        //{
+        //    return "My dependency: " + new HelloWorldDependencyLibrary.MyDependency().Get();
+        //}
     }
 }
