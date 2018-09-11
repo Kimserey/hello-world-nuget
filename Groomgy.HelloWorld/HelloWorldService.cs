@@ -17,15 +17,15 @@
             return "Good afternoon";
         }
 
-        public string GoodEvening()
-        {
-            return "Good evening";
-        }
+        //public string GoodEvening()
+        //{
+        //    return "Good evening";
+        //}
 
-        public string GoodNight()
-        {
-            return "Good night";
-        }
+        //public string GoodNight()
+        //{
+        //    return "Good night";
+        //}
 
         public string CallMyDependency()
         {
