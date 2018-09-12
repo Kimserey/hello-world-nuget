@@ -56,12 +56,15 @@ module GitVersion =
         printfn "Executing gitversion from commit '%s'." commit
 
         fun variable ->
-            let (branch, pr) = Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER
+            let (branch, tag, pr) =
+                Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH,
+                Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME,
+                Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER
 
             printfn "Get variable '%s' for branch '%A' or PR '%A'" variable branch pr
 
-            match branch, pr with
-            | Some branch, None when branch = "master" ->
+            match branch, tag, pr with
+            | Some branch, Some tag, None when branch = "master" || branch = tag ->
                 Process.execWithSingleResult (fun info ->
                     { info with
                         FileName = "gitversion"
