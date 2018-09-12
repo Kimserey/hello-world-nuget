@@ -7,25 +7,25 @@
             return "Hello World";
         }
 
-        //public string GoodMorning()
-        //{
-        //    return "Good morning";
-        //}
+        public string GoodMorning()
+        {
+            return "Good morning";
+        }
 
-        //public string GoodAfternoon()
-        //{
-        //    return "Good afternoon";
-        //}
+        public string GoodAfternoon()
+        {
+            return "Good afternoon";
+        }
 
         public string GoodEvening()
         {
             return "Good evening";
         }
 
-        //public string GoodNight()
-        //{
-        //    return "Good night";
-        //}
+        public string GoodNight()
+        {
+            return "Good night";
+        }
 
         public string CallMyDependency()
         {
