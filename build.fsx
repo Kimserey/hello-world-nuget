@@ -56,7 +56,11 @@ module GitVersion =
         printfn "Executing gitversion from commit '%s'." commit
 
         fun variable ->
-            match Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER with
+            let (branch, pr) = Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH, Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER
+
+            printfn "Get variable '%s' for branch '%A' or PR '%A'" variable branch pr
+
+            match branch, pr with
             | Some branch, None when branch = "master" ->
                 Process.execWithSingleResult (fun info ->
                     { info with
@@ -107,7 +111,7 @@ Target.create "PrintVersion" (fun _ ->
     printfn "Full sementic version: '%s'`" fullSemVer
     printfn "Assembyly version: '%s'" assemblyVer
     printfn "NuGet sementic version: '%s'" nugetVer
-    printfn "Previous version: '%A'" previousVersion
+    printfn "Previous version: '%s'" previousVersion
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
