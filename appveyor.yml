@@ -18,7 +18,7 @@ environment:
   BuildConfiguration: release
 
 install:
-  - ps: choco install gitversion.portable -pre -y
+  - ps: choco install gitversion.portable -pre -y --no-progress
 
 build_script:
   - ps: .\fake run build.fsx -t All
