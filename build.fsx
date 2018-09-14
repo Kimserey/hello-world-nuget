@@ -72,12 +72,9 @@ module GitVersion =
         printfn "Executing gitversion from commit '%s'." commit
 
         fun variable ->
-            let (branch, tag, pr) =
+            let (branch, tag) =
                 Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH,
-                Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME,
-                Environment.environVarOrNone Environment.APPVEYOR_PULL_REQUEST_NUMBER
-
-            printfn "Get variable '%s' for branch '%A' or PR '%A'" variable branch pr
+                Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME
 
             match branch, tag with
             | Some branch, None when branch = "master" -> gitVersionDynamic branch variable
@@ -96,8 +93,6 @@ module GitVersion =
                     showVariable "FullSemVer"
                 let nugetVersion2 =
                     showVariable "NuGetVersionV2"
-                let preReleaseLabel =
-                    showVariable "PreReleaseLabel"
                 let buildMetaDataPadded =
                     showVariable "BuildMetaDataPadded"
 
