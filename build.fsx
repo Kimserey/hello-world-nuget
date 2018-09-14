@@ -134,10 +134,10 @@ Target.create "UpdateBuildVersion" (fun _ ->
 )
 
 Target.create "GatherReleaseNotes" (fun _ ->
-    let (fullSemVer, _, _, previousTag) = GitVersion.get()
+    let (_, _, _, previousTag) = GitVersion.get()
 
     let releaseNotes =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag fullSemVer})
+        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..HEAD" previousTag })
         |> String.concat(System.Environment.NewLine)
 
     printfn "Gathered release notes:"
