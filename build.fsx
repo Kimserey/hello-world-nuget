@@ -105,7 +105,7 @@ module GitVersion =
                     if isStableRelease then
                         nugetVersion2
                     else
-                        sprintf "%s-alpha.%s" fullSemVer preReleaseLabel buildMetaDataPadded
+                        sprintf "%s-alpha.%s" fullSemVer buildMetaDataPadded
 
                 let previousTag =
                     if isStableRelease then
