@@ -34,20 +34,6 @@
         {
             return "Good night";
         }
-        public string GoodNight1()
-        {
-            return "Good night";
-        }
-
-        public string GoodNight2()
-        {
-            return "Good night";
-        }
-
-        public string GoodNight3()
-        {
-            return "Good night";
-        }
 
         public string CallMyDependency()
         {
