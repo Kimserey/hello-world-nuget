@@ -6,14 +6,6 @@
         {
             return "Hello World";
         }
-        public string Say1()
-        {
-            return "Hello World";
-        }
-        public string Say2()
-        {
-            return "Hello World";
-        }
 
         public string GoodMorning()
         {
@@ -31,20 +23,6 @@
         }
 
         public string GoodNight()
-        {
-            return "Good night";
-        }
-        public string GoodNight1()
-        {
-            return "Good night";
-        }
-
-        public string GoodNight2()
-        {
-            return "Good night";
-        }
-
-        public string GoodNight3()
         {
             return "Good night";
         }
