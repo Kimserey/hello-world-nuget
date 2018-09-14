@@ -18,7 +18,6 @@ type Versioning = {
 module Environment =
     let [<Literal>] APPVEYOR = "APPVEYOR"
     let [<Literal>] APPVEYOR_BUILD_NUMBER = "APPVEYOR_BUILD_NUMBER"
-    let [<Literal>] APPVEYOR_PULL_REQUEST_NUMBER = "APPVEYOR_PULL_REQUEST_NUMBER"
     let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH"
     let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
     let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
@@ -110,9 +109,9 @@ module GitVersion =
                         Git.getPreviousTag()
 
                 value <- Some  {
-                    fullSemVer = version
+                    fullSemVer = showVariable "FullSemVer"
                     assemblySemVer = showVariable "AssemblySemVer"
-                    nugetVer = nugetVer
+                    nugetVer = showVariable "NuGetVersionV2"
                     previousTag = previousTag
                     stableReleaseFlag = isStableRelease
                 }
