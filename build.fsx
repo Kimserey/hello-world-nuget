@@ -76,7 +76,7 @@ module GitVersion =
                 Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME
 
             match branch, tag with
-            | Some branch, None when branch = "master" -> gitVersionDynamic branch variable
+            | Some branch, _ when branch = "master" -> gitVersionDynamic branch variable
             | Some branch, Some tag when branch = tag -> gitVersionDynamic branch variable
             | _ -> Process.execWithSingleResult (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
 
