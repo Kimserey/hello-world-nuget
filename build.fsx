@@ -95,12 +95,13 @@ module GitVersion =
                     showVariable "NuGetVersionV2"
                 let buildMetaDataPadded =
                     showVariable "BuildMetaDataPadded"
+                let alphaVer =
+                    sprintf "%s-alpha.%s" fullSemVer buildMetaDataPadded
 
+                let version =
+                    if isStableRelease then fullSemVer else alphaVer
                 let nugetVer =
-                    if isStableRelease then
-                        nugetVersion2
-                    else
-                        sprintf "%s-alpha.%s" fullSemVer buildMetaDataPadded
+                    if isStableRelease then nugetVersion2 else alphaVer
 
                 let previousTag =
                     if isStableRelease then
@@ -109,7 +110,7 @@ module GitVersion =
                         Git.getPreviousTag()
 
                 value <- Some  {
-                    fullSemVer = fullSemVer
+                    fullSemVer = version
                     assemblySemVer = showVariable "AssemblySemVer"
                     nugetVer = nugetVer
                     previousTag = previousTag
