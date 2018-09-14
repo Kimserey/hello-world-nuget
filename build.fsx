@@ -38,16 +38,20 @@ module Process =
         | messages -> failwith <| sprintf "Expected single result but received multiple responses. %s" (messages |> String.concat "\n")
 
 module Git =
-    let getPreviousTag() =
-        let prevCommitHash = Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-list --tags --skip=1 --max-count=1" })
-        Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = sprintf "describe --abbrev=0 --tags %s" prevCommitHash })
+    open System.Text.RegularExpressions
 
-    let getPreviousStableTag() =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = "tag --sort=committerdate" })
-        |> List.rev
+    let [<Literal>] private REGEX_ANY_RELEASE_TAG = ".*"
+    let [<Literal>] private REGEX_STABLE_RELEASE_TAG = "^([0-9]+)\.([0-9]+)\.([0-9]+)$"
+
+    let private getPreviousTagMatching pattern =
+        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = "for-each-ref refs/tags/ --count=20 --sort=-committerdate --format=\"%(refname:short)\"" })
+        |> List.filter (fun tag -> Regex.Match(tag, pattern).Success)
         |> List.skip 1
         |> List.tryHead
         |> Option.defaultValue ""
+
+    let getPreviousTag() = getPreviousTagMatching REGEX_ANY_RELEASE_TAG
+    let getPreviousStableTag() = getPreviousTagMatching REGEX_STABLE_RELEASE_TAG
 
 module GitVersion =
     let showVariable =
@@ -85,8 +89,10 @@ module GitVersion =
                     String.isNullOrWhiteSpace(showVariable "PreReleaseTag")
 
                 let previousTag =
-                    if isStableRelease then Git.getPreviousStableTag()
-                    else Git.getPreviousTag()
+                    if isStableRelease then
+                        Git.getPreviousStableTag()
+                    else
+                        Git.getPreviousTag()
 
                 value <- Some (
                     showVariable "FullSemVer",
