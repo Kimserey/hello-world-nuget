@@ -10,10 +10,6 @@
         {
             return "Hello World";
         }
-        public string Say2()
-        {
-            return "Hello World";
-        }
 
         public string GoodMorning()
         {
