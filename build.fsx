@@ -88,19 +88,6 @@ module GitVersion =
             | None ->
                 let isStableRelease =
                     String.isNullOrWhiteSpace(showVariable "PreReleaseTag")
-                let fullSemVer =
-                    showVariable "FullSemVer"
-                let nugetVersion2 =
-                    showVariable "NuGetVersionV2"
-                let buildMetaDataPadded =
-                    showVariable "BuildMetaDataPadded"
-                let alphaVer =
-                    sprintf "%s-alpha.%s" fullSemVer buildMetaDataPadded
-
-                let version =
-                    if isStableRelease then fullSemVer else alphaVer
-                let nugetVer =
-                    if isStableRelease then nugetVersion2 else alphaVer
 
                 let previousTag =
                     if isStableRelease then
