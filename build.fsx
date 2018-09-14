@@ -31,8 +31,11 @@ module Process =
         |> fun r -> r.Messages
 
     let execWithSingleResult f =
-        execWithMultiResult f
-        |> List.head
+        let result = execWithMultiResult f
+
+        match result with
+        | [ value ] -> value
+        | messages -> failwith <| sprintf "Expected single result but received multiple responses. %s" (messages |> String.concat "\n")
 
 module Git =
     let getPreviousTag() =
