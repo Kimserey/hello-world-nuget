@@ -12,15 +12,15 @@
             return "Good morning";
         }
 
-        //public string GoodAfternoon()
-        //{
-        //    return "Good afternoon";
-        //}
+        public string GoodAfternoon()
+        {
+            return "Good afternoon";
+        }
 
-        //public string GoodEvening()
-        //{
-        //    return "Good evening";
-        //}
+        public string GoodEvening()
+        {
+            return "Good evening";
+        }
 
         public string GoodNight()
         {
