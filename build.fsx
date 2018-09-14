@@ -7,12 +7,13 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
-type FullSemVer = string
-type AssemblySemVer = string
-type NuGetVersionV2 = string
-type Tag = string
-type StableReleaseFlag = bool
-type Versioning = FullSemVer * AssemblySemVer * NuGetVersionV2 * Tag * StableReleaseFlag
+type Versioning = {
+    fullSemVer: string
+    assemblySemVer: string
+    nugetVer: string
+    previousTag: string
+    stableReleaseFlag: bool
+}
 
 module Environment =
     let [<Literal>] APPVEYOR = "APPVEYOR"
@@ -91,6 +92,20 @@ module GitVersion =
             | None ->
                 let isStableRelease =
                     String.isNullOrWhiteSpace(showVariable "PreReleaseTag")
+                let fullSemVer =
+                    showVariable "FullSemVer"
+                let nugetVersion2 =
+                    showVariable "NuGetVersionV2"
+                let preReleaseLabel =
+                    showVariable "PreReleaseLabel"
+                let buildMetaDataPadded =
+                    showVariable "BuildMetaDataPadded"
+
+                let nugetVer =
+                    if isStableRelease then
+                        nugetVersion2
+                    else
+                        sprintf "%s-alpha.%s" fullSemVer preReleaseLabel buildMetaDataPadded
 
                 let previousTag =
                     if isStableRelease then
@@ -98,13 +113,13 @@ module GitVersion =
                     else
                         Git.getPreviousTag()
 
-                value <- Some (
-                    showVariable "FullSemVer",
-                    showVariable "AssemblySemVer",
-                    showVariable "NuGetVersionV2",
-                    previousTag,
-                    isStableRelease
-                )
+                value <- Some  {
+                    fullSemVer = fullSemVer
+                    assemblySemVer = showVariable "AssemblySemVer"
+                    nugetVer = nugetVer
+                    previousTag = previousTag
+                    stableReleaseFlag = isStableRelease
+                }
 
                 Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
                     Shell.deleteDir "gitversion"
@@ -124,26 +139,26 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "PrintVersion" (fun _ ->
-    let (fullSemVer, assemblyVer, nugetVer, previousVersion, stableReleaseFlag) = GitVersion.get()
-    printfn "Full sementic version: '%s'`" fullSemVer
-    printfn "Assembyly version: '%s'" assemblyVer
-    printfn "NuGet sementic version: '%s'" nugetVer
-    printfn "Previous version: '%s'" previousVersion
-    printfn "Stable Release Flag: '%s'" (string stableReleaseFlag)
+    let version = GitVersion.get()
+    printfn "Full sementic version: '%s'`" version.fullSemVer
+    printfn "Assembyly version: '%s'" version.assemblySemVer
+    printfn "NuGet sementic version: '%s'" version.nugetVer
+    printfn "Previous version: '%s'" version.previousTag
+    printfn "Stable Release Flag: '%s'" (string version.stableReleaseFlag)
 )
 
 Target.create "UpdateBuildVersion" (fun _ ->
-    let (fullSemVer, _, _, _, _) = GitVersion.get()
+    let version = GitVersion.get()
 
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" version.fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
     |> ignore
 )
 
 Target.create "GatherReleaseNotes" (fun _ ->
-    let (_, _, _, previousTag, _) = GitVersion.get()
+    let version = GitVersion.get()
 
     let releaseNotes =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..HEAD" previousTag })
+        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..HEAD" version.previousTag })
         |> String.concat(System.Environment.NewLine)
 
     printfn "Gathered release notes:"
@@ -154,11 +169,11 @@ Target.create "GatherReleaseNotes" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
-    let (fullSemVer, assemblyVer, _, _, _) = GitVersion.get()
+    let version = GitVersion.get()
 
     let setParams (buildOptions: DotNet.BuildOptions) =
         { buildOptions with
-            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" fullSemVer assemblyVer) }
+            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" version.fullSemVer version.assemblySemVer) }
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }
 
     !! "**/*.*proj"
@@ -168,14 +183,14 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let (_, _, nuGetVer, _, _) = GitVersion.get()
+    let version = GitVersion.get()
 
     let setParams (packOptions: DotNet.PackOptions) =
         { packOptions with
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
             OutputPath = Some "../artifacts"
             NoBuild = true
-            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nuGetVer) } }
+            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" version.nugetVer) } }
 
     !! "**/*.*proj"
     -- "**/Groomgy.*Test.*proj"
