@@ -47,6 +47,11 @@
             return "Good night";
         }
 
+        public string GoodNight4()
+        {
+            return "Good night";
+        }
+
         public string CallMyDependency()
         {
             return "My dependency: " + new HelloWorldDependencyLibrary.MyDependency().Get();
