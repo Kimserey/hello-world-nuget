@@ -52,17 +52,6 @@
             return "Good night";
         }
 
-        public string GoodNight5()
-        {
-            return "Good night";
-        }
-
-        public string GoodNight6()
-        {
-            return "Good night";
-        }
-
-
         public string CallMyDependency()
         {
             return "My dependency: " + new HelloWorldDependencyLibrary.MyDependency().Get();
