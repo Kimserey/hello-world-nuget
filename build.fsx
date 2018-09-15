@@ -66,7 +66,7 @@ module GitVersion =
             Process.execWithSingleResult (fun info ->
                 { info with
                     FileName = "gitversion"
-                    Arguments = sprintf "/showvariable %s /url %s /b remote-%s /dynamicRepoLocation .\gitversion /c %s" variable Environment.REPOSITORY branch commit })
+                    Arguments = sprintf "/showvariable %s /url %s /b build-%s /dynamicRepoLocation .\gitversion /c %s" variable Environment.REPOSITORY branch commit })
 
         printfn "Executing gitversion from commit '%s'." commit
 
