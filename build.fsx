@@ -12,6 +12,7 @@ type Versioning = {
     assemblySemVer: string
     nugetVer: string
     previousTag: string
+    currentRef: string
     stableReleaseFlag: bool
 }
 
@@ -45,15 +46,16 @@ module Git =
     let [<Literal>] private REGEX_ANY_RELEASE_TAG = ".*"
     let [<Literal>] private REGEX_STABLE_RELEASE_TAG = "^([0-9]+)\.([0-9]+)\.([0-9]+)$"
 
-    let private getPreviousTagMatching pattern =
+    let private getPreviousTagMatching pattern currentTag =
         Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = "for-each-ref refs/tags/ --count=20 --sort=-committerdate --format=\"%(refname:short)\"" })
-        |> List.filter (fun tag -> Regex.Match(tag, pattern).Success)
+        |> List.skipWhile (fun tag -> match currentTag with Some cur -> tag <> cur | None -> false)
         |> List.skip 1
+        |> List.filter (fun tag -> Regex.Match(tag, pattern).Success)
         |> List.tryHead
         |> Option.defaultValue ""
 
-    let getPreviousTag() = getPreviousTagMatching REGEX_ANY_RELEASE_TAG
-    let getPreviousStableTag() = getPreviousTagMatching REGEX_STABLE_RELEASE_TAG
+    let getPreviousTag currentTag = getPreviousTagMatching REGEX_ANY_RELEASE_TAG currentTag
+    let getPreviousStableTag currentTag = getPreviousTagMatching REGEX_STABLE_RELEASE_TAG currentTag
 
 module GitVersion =
     let showVariable =
@@ -70,10 +72,9 @@ module GitVersion =
 
         printfn "Executing gitversion from commit '%s'." commit
 
-        fun variable ->
-            let (branch, tag) =
-                Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH,
-                Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME
+        fun variable tag ->
+            let branch =
+                Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH
 
             match branch, tag with
             | Some branch, _ when branch = "master" -> gitVersionDynamic branch variable
@@ -86,21 +87,25 @@ module GitVersion =
         fun () ->
             match value with
             | None ->
+                let currentTag =
+                    Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME
+
                 let isStableRelease =
-                    String.isNullOrWhiteSpace(showVariable "PreReleaseTag")
+                    String.isNullOrWhiteSpace(showVariable "PreReleaseTag" currentTag)
 
                 let previousTag =
                     if isStableRelease then
-                        Git.getPreviousStableTag()
+                        Git.getPreviousStableTag currentTag
                     else
-                        Git.getPreviousTag()
+                        Git.getPreviousTag currentTag
 
                 value <- Some  {
-                    fullSemVer = showVariable "FullSemVer"
-                    assemblySemVer = showVariable "AssemblySemVer"
-                    nugetVer = showVariable "NuGetVersionV2"
+                    fullSemVer = showVariable "FullSemVer" currentTag
+                    assemblySemVer = showVariable "AssemblySemVer" currentTag
+                    nugetVer = showVariable "NuGetVersionV2" currentTag
                     previousTag = previousTag
                     stableReleaseFlag = isStableRelease
+                    currentRef = match currentTag with Some tag -> tag | None -> "HEAD"
                 }
 
                 Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
@@ -140,7 +145,7 @@ Target.create "GatherReleaseNotes" (fun _ ->
     let version = GitVersion.get()
 
     let releaseNotes =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..HEAD" version.previousTag })
+        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" version.previousTag version.currentRef })
         |> String.concat(System.Environment.NewLine)
 
     printfn "Gathered release notes:"
