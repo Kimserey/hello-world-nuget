@@ -53,15 +53,19 @@ module GitRelease =
         |> Seq.tryItem 1
 
 module GitVersion =
-    let private showVariable repository variable branchBuild commit =
+    type Repository = string
+    type Branch = string
+    type Commit = string
+
+    let private showVariable variable (repository: Repository) (branchBuild: Branch) (commit: Commit) =
         Process.execWithSingleResult (fun info ->
             { info with
                 FileName = "gitversion"
-                Arguments = sprintf "/url %s /dynamicRepoLocation .\gitversion /showvariable %s /b %s /c %s" repository variable branchBuild commit })
+                Arguments = sprintf "/showvariable %s /url %s /dynamicRepoLocation .\gitversion /b %s /c %s" variable repository branchBuild commit })
 
-    let fullSemVer = showVariable Environment.REPOSITORY  "FullSemVer"
-    let assemblyVer = showVariable Environment.REPOSITORY  "AssemblySemVer"
-    let nugetVersion = showVariable Environment.REPOSITORY  "NuGetVersionV2"
+    let fullSemVer = showVariable "FullSemVer"
+    let assemblyVer = showVariable "AssemblySemVer"
+    let nugetVersion = showVariable "NuGetVersionV2"
 
 let buildBranch =
     Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME
@@ -74,9 +78,9 @@ let commit =
     | Some c -> c
     | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
 
-let fullSemVer = GitVersion.fullSemVer buildBranch commit
-let assemblyVer = GitVersion.assemblyVer buildBranch commit
-let nugetVersion = GitVersion.fullSemVer buildBranch commit
+let fullSemVer = GitVersion.fullSemVer Environment.REPOSITORY buildBranch commit
+let assemblyVer = GitVersion.assemblyVer Environment.REPOSITORY buildBranch commit
+let nugetVersion = GitVersion.nugetVersion Environment.REPOSITORY buildBranch commit
 
 printfn "Full sementic version: '%s'`" fullSemVer
 printfn "Assembyly version: '%s'" assemblyVer
@@ -148,7 +152,6 @@ Target.create "Pack" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
-  ==> "PrintVersion"
   =?> ("AppVeyor_UpdateBuildVersion", Environment.environVarAsBool Environment.AppVeyor.APPVEYOR)
   =?> ("AppVeyor_GatherReleaseNotes", not <| String.isNullOrWhiteSpace(Environment.environVar Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME))
   ==> "Build"
