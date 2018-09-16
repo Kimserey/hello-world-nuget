@@ -67,24 +67,28 @@ module GitVersion =
     let assemblyVer = showVariable "AssemblySemVer"
     let nugetVersion = showVariable "NuGetVersionV2"
 
-let buildBranch =
+let buildBranch () =
     Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME
     |> Option.map GitRelease.isStableRelease
     |> Option.map (fun isStable -> if isStable then "build" else "alpha")
     |> Option.defaultValue "alpha"
 
-let commit =
+let commit () =
     match Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_COMMIT with
     | Some c -> c
     | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
 
-let fullSemVer = GitVersion.fullSemVer Environment.REPOSITORY buildBranch commit
-let assemblyVer = GitVersion.assemblyVer Environment.REPOSITORY buildBranch commit
-let nugetVersion = GitVersion.nugetVersion Environment.REPOSITORY buildBranch commit
+let fullSemVer () =
+    let (branch, commit) = buildBranch(), commit()
+    GitVersion.fullSemVer Environment.REPOSITORY branch commit
 
-printfn "Full sementic version: '%s'`" fullSemVer
-printfn "Assembyly version: '%s'" assemblyVer
-printfn "NuGet sementic version: '%s'" nugetVersion
+let assemblyVer () =
+    let (branch, commit) = buildBranch(), commit()
+    GitVersion.assemblyVer Environment.REPOSITORY branch commit
+
+let nugetVersion () =
+    let (branch, commit) = buildBranch(), commit()
+    GitVersion.nugetVersion Environment.REPOSITORY branch commit
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
@@ -94,8 +98,14 @@ Target.create "Clean" (fun _ ->
     |> Shell.deleteDirs
 )
 
+Target.create "PrintVersion" (fun _ ->
+    printfn "Full sementic version: '%s'`" (fullSemVer ())
+    printfn "Assembyly version: '%s'" (assemblyVer ())
+    printfn "NuGet sementic version: '%s'" (nugetVersion ())
+)
+
 Target.create "AppVeyor_UpdateBuildVersion" (fun _ ->
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_VERSION))
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" (fullSemVer ()) (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_VERSION))
     |> ignore
 )
 
@@ -110,7 +120,7 @@ Target.create "AppVeyor_GatherReleaseNotes" (fun _ ->
                     Process.execWithMultiResult (fun info ->
                         { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag tag })
                     |> String.concat(System.Environment.NewLine)
-                printfn "AppVeyor_GatherReleaseNotes: Release notes found\n\n%s" notes
+                printfn "AppVeyor_GatherReleaseNotes: Release notes found\n%s" notes
                 notes
             | None ->
                 printfn "AppVeyor_GatherReleaseNotes: Previous Release to tag '%s' could not be found. Skipping GatherReleaseNotes." tag
@@ -126,7 +136,7 @@ Target.create "AppVeyor_GatherReleaseNotes" (fun _ ->
 Target.create "Build" (fun _ ->
     let setParams (buildOptions: DotNet.BuildOptions) =
         { buildOptions with
-            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" fullSemVer assemblyVer) }
+            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" (fullSemVer ()) (assemblyVer ())) }
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }
 
     !! "**/*.*proj"
@@ -141,7 +151,7 @@ Target.create "Pack" (fun _ ->
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
             OutputPath = Some "../artifacts"
             NoBuild = true
-            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nugetVersion) } }
+            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" (nugetVersion ())) } }
 
     !! "**/*.*proj"
     -- "**/Groomgy.*Test.*proj"
