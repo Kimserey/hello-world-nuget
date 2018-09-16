@@ -14,7 +14,7 @@ module Environment =
 
     module AppVeyor =
         let [<Literal>] APPVEYOR = "APPVEYOR"
-        let [<Literal>] APPVEYOR_BUILD_NUMBER = "APPVEYOR_BUILD_VERSION"
+        let [<Literal>] APPVEYOR_BUILD_VERSION = "APPVEYOR_BUILD_VERSION"
         let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
         let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
 
@@ -95,7 +95,7 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "AppVeyor_UpdateBuildVersion" (fun _ ->
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_NUMBER))
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_VERSION))
     |> ignore
 )
 
