@@ -66,7 +66,9 @@ module GitVersion =
                         Arguments = sprintf "/showvariable %s" variable })
                 |> Some
             with
-            | _ -> None
+            | exn ->
+                printfn "Failed to execute gitversion on local repository."
+                None
 
         // Second try to resolve variable from dynamic repository.
         match result with
