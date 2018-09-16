@@ -23,7 +23,6 @@
         }
 
         // test comment
-        // some other next comment
         // some next comment
 
         public string CallMyDependency()
