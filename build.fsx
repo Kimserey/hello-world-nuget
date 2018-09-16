@@ -36,9 +36,9 @@ module Process =
 module GitRelease =
     open System.Text.RegularExpressions
 
-    let [<Literal>] private REGEX_STABLE_RELEASE_TAG = "^([0-9]+)\.([0-9]+)\.([0-9]+)$"
+    let [<Literal>] REGEX_STABLE_RELEASE_TAG = "^([0-9]+)\.([0-9]+)\.([0-9]+)$"
 
-    let private isStableRelease tag = Regex.Match(tag, REGEX_STABLE_RELEASE_TAG).Success
+    let isStableRelease tag = Regex.Match(tag, REGEX_STABLE_RELEASE_TAG).Success
 
     let getPreviousRelease currentTag =
         // The Git command followed by the filtering assumes that only one type of tag is used, either lightweight tags or annotated tags.
@@ -53,20 +53,34 @@ module GitRelease =
         |> Seq.tryItem 1
 
 module GitVersion =
-    let private showVariable repository variable commit =
+    let private showVariable repository variable branchBuild commit =
         Process.execWithSingleResult (fun info ->
             { info with
                 FileName = "gitversion"
-                Arguments = sprintf "/showvariable %s /url %s /b build /dynamicRepoLocation .\gitversion /c %s" variable repository commit })
+                Arguments = sprintf "/url %s /dynamicRepoLocation .\gitversion /showvariable %s /b %s /c %s" repository variable branchBuild commit })
 
     let fullSemVer = showVariable Environment.REPOSITORY  "FullSemVer"
     let assemblyVer = showVariable Environment.REPOSITORY  "AssemblySemVer"
     let nugetVersion = showVariable Environment.REPOSITORY  "NuGetVersionV2"
 
+let buildBranch =
+    Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME
+    |> Option.map GitRelease.isStableRelease
+    |> Option.map (fun isStable -> if isStable then "build" else "alpha")
+    |> Option.defaultValue "alpha"
+
 let commit =
     match Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_COMMIT with
     | Some c -> c
     | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
+
+let fullSemVer = GitVersion.fullSemVer buildBranch commit
+let assemblyVer = GitVersion.assemblyVer buildBranch commit
+let nugetVersion = GitVersion.fullSemVer buildBranch commit
+
+printfn "Full sementic version: '%s'`" fullSemVer
+printfn "Assembyly version: '%s'" assemblyVer
+printfn "NuGet sementic version: '%s'" nugetVersion
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
@@ -76,14 +90,8 @@ Target.create "Clean" (fun _ ->
     |> Shell.deleteDirs
 )
 
-Target.create "PrintVersion" (fun _ ->
-    printfn "Full sementic version: '%s'`" (GitVersion.fullSemVer commit)
-    printfn "Assembyly version: '%s'" (GitVersion.assemblyVer commit)
-    printfn "NuGet sementic version: '%s'" (GitVersion.nugetVersion commit)
-)
-
 Target.create "AppVeyor_UpdateBuildVersion" (fun _ ->
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" (GitVersion.fullSemVer commit) (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_NUMBER))
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" fullSemVer (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_NUMBER))
     |> ignore
 )
 
@@ -114,7 +122,7 @@ Target.create "AppVeyor_GatherReleaseNotes" (fun _ ->
 Target.create "Build" (fun _ ->
     let setParams (buildOptions: DotNet.BuildOptions) =
         { buildOptions with
-            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" (GitVersion.fullSemVer commit) (GitVersion.assemblyVer commit)) }
+            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" fullSemVer assemblyVer) }
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }
 
     !! "**/*.*proj"
@@ -129,7 +137,7 @@ Target.create "Pack" (fun _ ->
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
             OutputPath = Some "../artifacts"
             NoBuild = true
-            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" (GitVersion.nugetVersion commit)) } }
+            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" nugetVersion) } }
 
     !! "**/*.*proj"
     -- "**/Groomgy.*Test.*proj"
