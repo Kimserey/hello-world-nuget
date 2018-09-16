@@ -7,6 +7,8 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
+System.Environment.CurrentDirectory <- "C:\\Projects\\hello-world-nuget"
+
 type Versioning = {
     fullSemVer: string
     assemblySemVer: string
@@ -43,19 +45,21 @@ module Process =
 module Git =
     open System.Text.RegularExpressions
 
-    let [<Literal>] private REGEX_ANY_RELEASE_TAG = ".*"
     let [<Literal>] private REGEX_STABLE_RELEASE_TAG = "^([0-9]+)\.([0-9]+)\.([0-9]+)$"
 
-    let private getPreviousTagMatching pattern currentTag =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = "for-each-ref refs/tags/ --count=20 --sort=-committerdate --format=\"%(refname:short)\"" })
-        |> List.skipWhile (fun tag -> match currentTag with Some cur -> tag <> cur | None -> false)
-        |> List.skip 1
-        |> List.filter (fun tag -> Regex.Match(tag, pattern).Success)
-        |> List.tryHead
-        |> Option.defaultValue ""
+    let private isStableRelease tag = Regex.Match(tag, REGEX_STABLE_RELEASE_TAG).Success
 
-    let getPreviousTag currentTag = getPreviousTagMatching REGEX_ANY_RELEASE_TAG currentTag
-    let getPreviousStableTag currentTag = getPreviousTagMatching REGEX_STABLE_RELEASE_TAG currentTag
+    let getPreviousRelease currentTag =
+        // The Git command followed by the filtering assumes that only one type of tag is used, either lightweight tags or annotated tags.
+        // A combination of both will fail as the for-each-ref categorize first commit/tag so the versions will grouped by commit/tag before being sorted by committer date.
+        Process.execWithMultiResult (fun info ->
+            { info with
+                FileName = "git"
+                Arguments = "for-each-ref refs/tags/ --sort=-committerdate --format=\"%(refname:short)\"" })
+        |> Seq.map (fun t -> printfn "%s" t; t)
+        |> Seq.skipWhile (fun tag -> currentTag <> tag)
+        |> Seq.filter (fun tag ->  if (isStableRelease currentTag) then isStableRelease tag else true)
+        |> Seq.tryItem 1
 
 module GitVersion =
     let showVariable =
