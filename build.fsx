@@ -54,41 +54,41 @@ module GitRelease =
 
 module GitVersion =
     type Repository = string
-    type Branch = string
     type Commit = string
 
-    let private showVariable variable (repository: Repository) (branchBuild: Branch) (commit: Commit) =
-        Process.execWithSingleResult (fun info ->
-            { info with
-                FileName = "gitversion"
-                Arguments = sprintf "/showvariable %s /url %s /dynamicRepoLocation .\gitversion /b %s /c %s" variable repository branchBuild commit })
+    let private showVariable variable (repository: Repository) (commit: Commit) =
+        // First try to resolve variable from local repository.
+        let result =
+            try
+                Process.execWithSingleResult (fun info ->
+                    { info with
+                        FileName = "gitversion"
+                        Arguments = sprintf "/showvariable %s" variable })
+                |> Some
+            with
+            | _ -> None
+
+        // Second try to resolve variable from dynamic repository.
+        match result with
+        | Some var -> var
+        | None ->
+            Process.execWithSingleResult (fun info ->
+                { info with
+                    FileName = "gitversion"
+                    Arguments = sprintf "/showvariable %s /url %s /dynamicRepoLocation .\gitversion /b build /c %s" variable repository commit })
 
     let fullSemVer = showVariable "FullSemVer"
     let assemblyVer = showVariable "AssemblySemVer"
     let nugetVersion = showVariable "NuGetVersionV2"
-
-let buildBranch () =
-    Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME
-    |> Option.map GitRelease.isStableRelease
-    |> Option.map (fun isStable -> if isStable then "build" else "alpha")
-    |> Option.defaultValue "alpha"
 
 let commit () =
     match Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_COMMIT with
     | Some c -> c
     | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
 
-let fullSemVer () =
-    let (branch, commit) = buildBranch(), commit()
-    GitVersion.fullSemVer Environment.REPOSITORY branch commit
-
-let assemblyVer () =
-    let (branch, commit) = buildBranch(), commit()
-    GitVersion.assemblyVer Environment.REPOSITORY branch commit
-
-let nugetVersion () =
-    let (branch, commit) = buildBranch(), commit()
-    GitVersion.nugetVersion Environment.REPOSITORY branch commit
+let fullSemVer () = GitVersion.fullSemVer Environment.REPOSITORY <| commit ()
+let assemblyVer () = GitVersion.assemblyVer Environment.REPOSITORY <| commit ()
+let nugetVersion () = GitVersion.nugetVersion Environment.REPOSITORY <| commit ()
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
