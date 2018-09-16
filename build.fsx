@@ -162,6 +162,7 @@ Target.create "Pack" (fun _ ->
 Target.create "All" ignore
 
 "Clean"
+  ==> "PrintVersion"
   =?> ("AppVeyor_UpdateBuildVersion", Environment.environVarAsBool Environment.AppVeyor.APPVEYOR)
   =?> ("AppVeyor_GatherReleaseNotes", not <| String.isNullOrWhiteSpace(Environment.environVar Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME))
   ==> "Build"
