@@ -22,7 +22,6 @@
             return "Good evening";
         }
 
-        // test comment
         // some next comment
 
         public string CallMyDependency()
