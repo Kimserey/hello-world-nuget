@@ -7,22 +7,16 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
-type Versioning = {
-    fullSemVer: string
-    assemblySemVer: string
-    nugetVer: string
-    previousTag: string
-    stableReleaseFlag: bool
-}
-
 module Environment =
-    let [<Literal>] APPVEYOR = "APPVEYOR"
-    let [<Literal>] APPVEYOR_BUILD_NUMBER = "APPVEYOR_BUILD_NUMBER"
-    let [<Literal>] APPVEYOR_REPO_BRANCH = "APPVEYOR_REPO_BRANCH"
-    let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
-    let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
+
     let [<Literal>] BUILD_CONFIGURATION = "BuildConfiguration"
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
+
+    module AppVeyor =
+        let [<Literal>] APPVEYOR = "APPVEYOR"
+        let [<Literal>] APPVEYOR_BUILD_NUMBER = "APPVEYOR_BUILD_NUMBER"
+        let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
+        let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
 
 module Process =
     let private timeout =
@@ -39,78 +33,40 @@ module Process =
         | [ value ] -> value
         | messages -> failwith <| sprintf "Expected single result but received multiple responses. %s" (messages |> String.concat "\n")
 
-module Git =
+module GitRelease =
     open System.Text.RegularExpressions
 
-    let [<Literal>] private REGEX_ANY_RELEASE_TAG = ".*"
     let [<Literal>] private REGEX_STABLE_RELEASE_TAG = "^([0-9]+)\.([0-9]+)\.([0-9]+)$"
 
-    let private getPreviousTagMatching pattern =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = "for-each-ref refs/tags/ --count=20 --sort=-committerdate --format=\"%(refname:short)\"" })
-        |> List.filter (fun tag -> Regex.Match(tag, pattern).Success)
-        |> List.skip 1
-        |> List.tryHead
-        |> Option.defaultValue ""
+    let private isStableRelease tag = Regex.Match(tag, REGEX_STABLE_RELEASE_TAG).Success
 
-    let getPreviousTag() = getPreviousTagMatching REGEX_ANY_RELEASE_TAG
-    let getPreviousStableTag() = getPreviousTagMatching REGEX_STABLE_RELEASE_TAG
+    let getPreviousRelease currentTag =
+        // The Git command followed by the filtering assumes that only one type of tag is used, either lightweight tags or annotated tags.
+        // A combination of both will fail as the for-each-ref categorize first commit/tag so the versions will grouped by commit/tag before being sorted by committer date.
+        Process.execWithMultiResult (fun info ->
+            { info with
+                FileName = "git"
+                Arguments = "for-each-ref refs/tags/ --sort=-committerdate --format=\"%(refname:short)\"" })
+        |> Seq.map (fun t -> printfn "%s" t; t)
+        |> Seq.skipWhile (fun tag -> currentTag <> tag)
+        |> Seq.filter (fun tag ->  if (isStableRelease currentTag) then isStableRelease tag else true)
+        |> Seq.tryItem 1
 
 module GitVersion =
-    let showVariable =
-        let commit =
-            match Environment.environVarOrNone Environment.APPVEYOR_REPO_COMMIT with
-            | Some c -> c
-            | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
+    let private showVariable repository variable commit =
+        Process.execWithSingleResult (fun info ->
+            { info with
+                FileName = "gitversion"
+                Arguments = sprintf "/showvariable %s /url %s /b build /dynamicRepoLocation .\gitversion /c %s" variable repository commit })
 
-        let gitVersionDynamic branch variable =
-            Process.execWithSingleResult (fun info ->
-                { info with
-                    FileName = "gitversion"
-                    Arguments = sprintf "/showvariable %s /url %s /b build-%s /dynamicRepoLocation .\gitversion /c %s" variable Environment.REPOSITORY branch commit })
+    let fullSemVer = showVariable Environment.REPOSITORY  "FullSemVer"
+    let assemblyVer = showVariable Environment.REPOSITORY  "AssemblySemVer"
+    let nugetVersion = showVariable Environment.REPOSITORY  "NuGetVersionV2"
 
-        printfn "Executing gitversion from commit '%s'." commit
-
-        fun variable ->
-            let (branch, tag) =
-                Environment.environVarOrNone Environment.APPVEYOR_REPO_BRANCH,
-                Environment.environVarOrNone Environment.APPVEYOR_REPO_TAG_NAME
-
-            match branch, tag with
-            | Some branch, _ when branch = "master" -> gitVersionDynamic branch variable
-            | Some branch, Some tag when branch = tag -> gitVersionDynamic branch variable
-            | _ -> Process.execWithSingleResult (fun info -> { info with FileName = "gitversion"; Arguments = sprintf "/showvariable %s" variable })
-
-    let get =
-        let mutable value: Option<Versioning> = None
-
-        fun () ->
-            match value with
-            | None ->
-                let isStableRelease =
-                    String.isNullOrWhiteSpace(showVariable "PreReleaseTag")
-
-                let previousTag =
-                    if isStableRelease then
-                        Git.getPreviousStableTag()
-                    else
-                        Git.getPreviousTag()
-
-                value <- Some  {
-                    fullSemVer = showVariable "FullSemVer"
-                    assemblySemVer = showVariable "AssemblySemVer"
-                    nugetVer = showVariable "NuGetVersionV2"
-                    previousTag = previousTag
-                    stableReleaseFlag = isStableRelease
-                }
-
-                Target.createFinal "ClearGitVersionRepositoryLocation" (fun _ ->
-                    Shell.deleteDir "gitversion"
-                )
-
-                Target.activateFinal "ClearGitVersionRepositoryLocation"
-
-                Option.get value
-            | Some v -> v
+let commit =
+    match Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_COMMIT with
+    | Some c -> c
+    | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
@@ -121,41 +77,44 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "PrintVersion" (fun _ ->
-    let version = GitVersion.get()
-    printfn "Full sementic version: '%s'`" version.fullSemVer
-    printfn "Assembyly version: '%s'" version.assemblySemVer
-    printfn "NuGet sementic version: '%s'" version.nugetVer
-    printfn "Previous version: '%s'" version.previousTag
-    printfn "Stable Release Flag: '%s'" (string version.stableReleaseFlag)
+    printfn "Full sementic version: '%s'`" (GitVersion.fullSemVer commit)
+    printfn "Assembyly version: '%s'" (GitVersion.assemblyVer commit)
+    printfn "NuGet sementic version: '%s'" (GitVersion.nugetVersion commit)
 )
 
-Target.create "UpdateBuildVersion" (fun _ ->
-    let version = GitVersion.get()
-
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" version.fullSemVer (Environment.environVar Environment.APPVEYOR_BUILD_NUMBER))
+Target.create "AppVeyor_UpdateBuildVersion" (fun _ ->
+    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" (GitVersion.fullSemVer commit) (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_NUMBER))
     |> ignore
 )
 
-Target.create "GatherReleaseNotes" (fun _ ->
-    let version = GitVersion.get()
-
+Target.create "AppVeyor_GatherReleaseNotes" (fun _ ->
     let releaseNotes =
-        Process.execWithMultiResult (fun info -> { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..HEAD" version.previousTag })
-        |> String.concat(System.Environment.NewLine)
-
-    printfn "Gathered release notes:"
-    printfn "%s" releaseNotes
+        match Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME with
+        | Some tag ->
+            match GitRelease.getPreviousRelease tag with
+            | Some previousTag ->
+                printfn "AppVeyor_GatherReleaseNotes: Gathering release notes..."
+                let notes =
+                    Process.execWithMultiResult (fun info ->
+                        { info with FileName = "git"; Arguments = sprintf "log --pretty=format:\"%%h %%s\" %s..%s" previousTag tag })
+                    |> String.concat(System.Environment.NewLine)
+                printfn "AppVeyor_GatherReleaseNotes: Release notes found\n\n%s" notes
+                notes
+            | None ->
+                printfn "AppVeyor_GatherReleaseNotes: Previous Release to tag '%s' could not be found. Skipping GatherReleaseNotes." tag
+                "None"
+        | None ->
+            printfn "AppVeyor_GatherReleaseNotes: No tag found for this build. Skipping GatherReleaseNotes."
+            "None"
 
     Shell.Exec("appveyor", sprintf "SetVariable -Name release_notes -Value \"%s\"" releaseNotes)
     |> ignore
 )
 
 Target.create "Build" (fun _ ->
-    let version = GitVersion.get()
-
     let setParams (buildOptions: DotNet.BuildOptions) =
         { buildOptions with
-            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" version.fullSemVer version.assemblySemVer) }
+            Common = { buildOptions.Common with DotNet.CustomParams = Some (sprintf "/p:Version=%s /p:FileVersion=%s" (GitVersion.fullSemVer commit) (GitVersion.assemblyVer commit)) }
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug }
 
     !! "**/*.*proj"
@@ -165,14 +124,12 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "Pack" (fun _ ->
-    let version = GitVersion.get()
-
     let setParams (packOptions: DotNet.PackOptions) =
         { packOptions with
             Configuration = DotNet.BuildConfiguration.fromEnvironVarOrDefault Environment.BUILD_CONFIGURATION DotNet.BuildConfiguration.Debug
             OutputPath = Some "../artifacts"
             NoBuild = true
-            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" version.nugetVer) } }
+            Common = { packOptions.Common with CustomParams = Some (sprintf "/p:PackageVersion=%s" (GitVersion.nugetVersion commit)) } }
 
     !! "**/*.*proj"
     -- "**/Groomgy.*Test.*proj"
@@ -184,8 +141,8 @@ Target.create "All" ignore
 
 "Clean"
   ==> "PrintVersion"
-  =?> ("UpdateBuildVersion", Environment.environVarAsBool Environment.APPVEYOR)
-  =?> ("GatherReleaseNotes", not <| String.isNullOrWhiteSpace(Environment.environVar Environment.APPVEYOR_REPO_TAG_NAME))
+  =?> ("AppVeyor_UpdateBuildVersion", Environment.environVarAsBool Environment.AppVeyor.APPVEYOR)
+  =?> ("AppVeyor_GatherReleaseNotes", not <| String.isNullOrWhiteSpace(Environment.environVar Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME))
   ==> "Build"
   ==> "Pack"
   ==> "All"
