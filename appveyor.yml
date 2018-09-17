@@ -21,6 +21,7 @@ install:
   - ps: choco install gitversion.portable -pre -y --no-progress
 
 before_build:
+  - cmd: git checkout -b alpha
   - ps: gitversion /l console /output buildserver
 
 build_script:
