@@ -20,6 +20,9 @@ environment:
 install:
   - ps: choco install gitversion.portable -pre -y --no-progress
 
+before_build:
+  - ps: gitversion /l console /output buildserver
+
 build_script:
   - ps: .\fake run build.fsx -t All
 
