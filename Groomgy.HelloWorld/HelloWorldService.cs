@@ -24,6 +24,7 @@
 
         // some next comment
         // some next comment
+        // some next comment
 
         public string CallMyDependency()
         {
