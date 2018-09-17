@@ -13,8 +13,6 @@ module Environment =
     let [<Literal>] REPOSITORY = "https://github.com/Kimserey/hello-world-nuget.git"
 
     module AppVeyor =
-        let [<Literal>] APPVEYOR = "APPVEYOR"
-        let [<Literal>] APPVEYOR_BUILD_VERSION = "APPVEYOR_BUILD_VERSION"
         let [<Literal>] APPVEYOR_REPO_COMMIT = "APPVEYOR_REPO_COMMIT"
         let [<Literal>] APPVEYOR_REPO_TAG_NAME = "APPVEYOR_REPO_TAG_NAME"
 
@@ -53,42 +51,17 @@ module GitRelease =
         |> Seq.tryItem 1
 
 module GitVersion =
-    type Repository = string
-    type Branch = string
-    type Commit = string
-
-    let private showVariable variable (repository: Repository) (branchBuild: Branch) (commit: Commit) =
+    let private showVariable variable =
         Process.execWithSingleResult (fun info ->
             { info with
                 FileName = "gitversion"
-                Arguments = sprintf "/showvariable %s /url %s /dynamicRepoLocation .\gitversion /b %s /c %s" variable repository branchBuild commit })
+                Arguments = sprintf "/showvariable %s" variable })
 
-    let fullSemVer = showVariable "FullSemVer"
-    let assemblyVer = showVariable "AssemblySemVer"
-    let nugetVersion = showVariable "NuGetVersionV2"
+    let fullSemVer() = showVariable "FullSemVer"
+    let assemblyVer() = showVariable "AssemblySemVer"
+    let nugetVersion() = showVariable "NuGetVersionV2"
 
-let buildBranch () =
-    Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME
-    |> Option.map GitRelease.isStableRelease
-    |> Option.map (fun isStable -> if isStable then "build" else "alpha")
-    |> Option.defaultValue "alpha"
-
-let commit () =
-    match Environment.environVarOrNone Environment.AppVeyor.APPVEYOR_REPO_COMMIT with
-    | Some c -> c
-    | None -> Process.execWithSingleResult (fun info -> { info with FileName = "git"; Arguments = "rev-parse HEAD" })
-
-let fullSemVer () =
-    let (branch, commit) = buildBranch(), commit()
-    GitVersion.fullSemVer Environment.REPOSITORY branch commit
-
-let assemblyVer () =
-    let (branch, commit) = buildBranch(), commit()
-    GitVersion.assemblyVer Environment.REPOSITORY branch commit
-
-let nugetVersion () =
-    let (branch, commit) = buildBranch(), commit()
-    GitVersion.nugetVersion Environment.REPOSITORY branch commit
+open GitVersion
 
 Target.create "Clean" (fun _ ->
     !! "**/bin"
@@ -102,11 +75,6 @@ Target.create "PrintVersion" (fun _ ->
     printfn "Full sementic version: '%s'`" (fullSemVer ())
     printfn "Assembyly version: '%s'" (assemblyVer ())
     printfn "NuGet sementic version: '%s'" (nugetVersion ())
-)
-
-Target.create "AppVeyor_UpdateBuildVersion" (fun _ ->
-    Shell.Exec("appveyor", sprintf "UpdateBuild -Version \"%s (%s)\"" (fullSemVer ()) (Environment.environVar Environment.AppVeyor.APPVEYOR_BUILD_VERSION))
-    |> ignore
 )
 
 Target.create "AppVeyor_GatherReleaseNotes" (fun _ ->
@@ -163,7 +131,6 @@ Target.create "All" ignore
 
 "Clean"
   ==> "PrintVersion"
-  =?> ("AppVeyor_UpdateBuildVersion", Environment.environVarAsBool Environment.AppVeyor.APPVEYOR)
   =?> ("AppVeyor_GatherReleaseNotes", not <| String.isNullOrWhiteSpace(Environment.environVar Environment.AppVeyor.APPVEYOR_REPO_TAG_NAME))
   ==> "Build"
   ==> "Pack"
